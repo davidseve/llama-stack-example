@@ -4,7 +4,7 @@
 
 # Global configuration
 global:
-  name: llama-stack-example
+  name: inference-example
   namespace: llama-stack-example
   labels:
     dashboard: 'true'
@@ -75,6 +75,8 @@ servingruntime:
 inferenceservice:
   # Enable or disable the inference service deployment
   enable: true
+  route:
+    enable: true
   
   # Predictor configuration
   predictor:

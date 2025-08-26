@@ -2,10 +2,11 @@
 secret:
   name: llama-stack-inference-model-secret
   data:
-    INFERENCE_MODEL: "llama-stack-example"  # Base64 encoded value
-    VLLM_URL: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox1105.opentlc.com"         # Base64 encoded value
+    INFERENCE_MODEL: "inference-example"  # Base64 encoded value
+    VLLM_URL: "https://inference-example-llama-stack-example.apps.ocp.sandbox2695.opentlc.com/v1"         # Base64 encoded value
     VLLM_TLS_VERIFY: "false"  # Base64 encoded value
-    VLLM_API_TOKEN: "TODO"   # Base64 encoded value
 
 config:
-  enable: false
+  enable: true
+  # file: conf/default-run.yaml
+  file: conf/mcp-run.yaml

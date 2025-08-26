@@ -1,0 +1,5 @@
+# LlamaStack Validation Script Dependencies
+llama-stack-client>=0.0.1
+# Additional dependencies for enhanced functionality
+aiohttp>=3.8.0
+asyncio-timeout>=4.0.0

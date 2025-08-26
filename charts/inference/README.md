@@ -17,7 +17,7 @@ Before starting, make sure you have installed:
 
 ```bash
 # Deploy with default values
-helm template llama-stack-example . | oc apply -f -
+helm template inference-example . | oc apply -f -
 ```
 
 ### Verify deployment
@@ -33,6 +33,6 @@ oc get servingruntime -n llama-stack-example
 oc get inferenceservice -n llama-stack-example
 
 # View detailed status
-oc describe inferenceservice llama-stack-example -n llama-stack-example
+oc describe inferenceservice inference-example -n llama-stack-example
 ```
 

@@ -27,11 +27,11 @@ spec:
             secretKeyRef:
               key: VLLM_TLS_VERIFY
               name: {{ .Values.global.name }}-secret
-        - name: VLLM_API_TOKEN
-          valueFrom:
-            secretKeyRef:
-              key: VLLM_API_TOKEN
-              name: {{ .Values.global.name }}-secret
+        # - name: VLLM_API_TOKEN
+        #   valueFrom:
+        #     secretKeyRef:
+        #       key: VLLM_API_TOKEN
+        #       name: {{ .Values.global.name }}-secret
         - name: MILVUS_DB_PATH
           value: {{ .Values.server.containerSpec.env.milvusDbPath | quote }}
         - name: FMS_ORCHESTRATOR_URL
@@ -46,10 +46,30 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      image: {{ .Values.server.distribution.image | quote }}
+      name: rh-dev
+      # image: {{ .Values.server.distribution.image | quote }}
    {{- if .Values.config.enable }}
     userConfig:
       configMapName: {{ .Values.global.name }}-config
    {{- end }}
     storage:
       size: {{ .Values.server.storage.size | quote }}
+{{- if .Values.route.enable }}
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ .Values.global.name }}
+  namespace: {{ .Values.global.namespace }}
+spec:
+  to:
+    kind: Service
+    name: {{ .Values.global.name }}-service
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: None
+  wildcardPolicy: None
+{{- end }}
