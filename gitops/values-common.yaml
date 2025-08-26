@@ -1,0 +1,3 @@
+global:
+  name: llama-stack-example
+  namespace: llama-stack-example

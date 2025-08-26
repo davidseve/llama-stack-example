@@ -1,0 +1,17 @@
+{{- if .Values.config.enable }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    openshift.io/display-name: {{ .Values.global.name }}
+  name: {{ .Values.global.name }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "llama-stack.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  run.yaml: |
+{{ tpl (toYaml .Values.config.run) . | nindent 4 }}
+{{- end }}

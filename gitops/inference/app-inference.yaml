@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: model-inference
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+spec:
+  destination:
+    namespace: openshift-gitops
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source: 
+    path: charts/inference
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+      - ../../gitops/values-common.yaml
+      - ../../gitops/inference/values-inference.yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

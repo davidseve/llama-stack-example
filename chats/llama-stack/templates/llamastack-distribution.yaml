@@ -1,0 +1,55 @@
+apiVersion: llamastack.io/v1alpha1
+kind: LlamaStackDistribution
+metadata:
+  annotations:
+    openshift.io/display-name: {{ .Values.global.name }}
+  name: {{ .Values.global.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "llama-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.llamastack.replicas }}
+  server:
+    containerSpec:
+      env:
+        - name: INFERENCE_MODEL
+          valueFrom:
+            secretKeyRef:
+              key: INFERENCE_MODEL
+              name: {{ .Values.global.name }}-secret
+        - name: VLLM_URL
+          valueFrom:
+            secretKeyRef:
+              key: VLLM_URL
+              name: {{ .Values.global.name }}-secret
+        - name: VLLM_TLS_VERIFY
+          valueFrom:
+            secretKeyRef:
+              key: VLLM_TLS_VERIFY
+              name: {{ .Values.global.name }}-secret
+        - name: VLLM_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: VLLM_API_TOKEN
+              name: {{ .Values.global.name }}-secret
+        - name: MILVUS_DB_PATH
+          value: {{ .Values.server.containerSpec.env.milvusDbPath | quote }}
+        - name: FMS_ORCHESTRATOR_URL
+          value: {{ .Values.server.containerSpec.env.fmsOrchestratorUrl | quote }}
+      name: {{ .Values.server.containerSpec.name }}
+      port: {{ .Values.server.containerSpec.port }}
+      resources:
+        limits:
+          cpu: {{ .Values.server.containerSpec.resources.limits.cpu | quote }}
+          memory: {{ .Values.server.containerSpec.resources.limits.memory | quote }}
+        requests:
+          cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
+          memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
+    distribution:
+      image: {{ .Values.server.distribution.image | quote }}
+   {{- if .Values.config.enable }}
+    userConfig:
+      configMapName: {{ .Values.global.name }}-config
+   {{- end }}
+    storage:
+      size: {{ .Values.server.storage.size | quote }}

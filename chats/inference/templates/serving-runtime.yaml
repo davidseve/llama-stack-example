@@ -1,0 +1,44 @@
+{{- if .Values.servingruntime.enable }}
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: {{ .Values.global.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    opendatahub.io/dashboard: {{ .Values.global.labels.dashboard | quote }}
+spec:
+  annotations:
+    prometheus.io/path: {{ .Values.servingruntime.prometheus.path }}
+    prometheus.io/port: {{ .Values.servingruntime.prometheus.port | quote }}
+  containers:
+    - args:
+        - '--port={{ .Values.servingruntime.container.args.port }}'
+        - '--model={{ .Values.servingruntime.container.args.modelPath }}'
+        - '--served-model-name={{ .Values.global.name }}'
+      command:
+        {{- range .Values.servingruntime.container.command }}
+        - {{ . | quote }}
+        {{- end }}
+      env:
+        - name: HF_HOME
+          value: {{ .Values.servingruntime.container.env.HF_HOME }}
+      image: '{{ .Values.servingruntime.container.image.repository }}@{{ .Values.servingruntime.container.image.digest }}'
+      name: {{ .Values.servingruntime.container.name }}
+      ports:
+        - containerPort: {{ .Values.servingruntime.container.ports.containerPort }}
+          protocol: {{ .Values.servingruntime.container.ports.protocol }}
+      volumeMounts:
+        - mountPath: {{ .Values.servingruntime.container.volumeMounts.shm.mountPath }}
+          name: {{ .Values.servingruntime.container.volumeMounts.shm.name }}
+  multiModel: {{ .Values.servingruntime.multiModel }}
+  supportedModelFormats:
+    {{- range .Values.servingruntime.supportedModelFormats }}
+    - autoSelect: {{ .autoSelect }}
+      name: {{ .name }}
+    {{- end }}
+  volumes:
+    - emptyDir:
+        medium: {{ .Values.servingruntime.volumes.shm.emptyDir.medium }}
+        sizeLimit: {{ .Values.servingruntime.volumes.shm.emptyDir.sizeLimit }}
+      name: {{ .Values.servingruntime.volumes.shm.name }}
+{{- end }}

@@ -1,0 +1,125 @@
+# Default values for inference chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  name: llama-stack-example
+  namespace: llama-stack-example
+  labels:
+    dashboard: 'true'
+
+project:
+  autocreate: true
+# Serving Runtime configuration
+servingruntime:
+  # Enable or disable the serving runtime deployment
+  enable: true
+  
+  # Prometheus monitoring configuration
+  prometheus:
+    path: /metrics
+    port: '8080'
+  
+  # Container configuration
+  container:
+    name: kserve-container
+    image:
+      repository: quay.io/modh/vllm
+      digest: sha256:db766445a1e3455e1bf7d16b008f8946fcbe9f277377af7abb81ae358805e7e2
+    
+    # Container ports
+    ports:
+      containerPort: 8080
+      protocol: TCP
+    
+    # Container arguments
+    args:
+      port: 8080
+      modelPath: /mnt/models
+      # served-model-name will be set to global.name by default
+    
+    # Container command
+    command:
+      - python
+      - '-m'
+      - vllm.entrypoints.openai.api_server
+    
+    # Environment variables
+    env:
+      HF_HOME: /tmp/hf_home
+    
+    # Volume mounts
+    volumeMounts:
+      shm:
+        mountPath: /dev/shm
+        name: shm
+  
+  # Model configuration
+  multiModel: false
+  
+  # Supported model formats
+  supportedModelFormats:
+    - autoSelect: true
+      name: vLLM
+  
+  # Volumes configuration
+  volumes:
+    shm:
+      emptyDir:
+        medium: Memory
+        sizeLimit: 2Gi
+      name: shm
+
+# Inference Service configuration
+inferenceservice:
+  # Enable or disable the inference service deployment
+  enable: true
+  
+  # Predictor configuration
+  predictor:
+    automountServiceAccountToken: false
+    maxReplicas: 1
+    minReplicas: 1
+    
+    # Model configuration
+    model:
+      # Model arguments for vLLM
+      args:
+        - '--dtype=half'
+        - '--max-model-len=20000'
+        - '--gpu-memory-utilization=0.95'
+        - '--enable-chunked-prefill'
+        - '--enable-auto-tool-choice'
+        - '--tool-call-parser=llama3_json'
+        - '--chat-template=/app/data/template/tool_chat_template_llama3.2_json.jinja'
+      
+      # Model format
+      modelFormat:
+        name: vLLM
+      
+      name: ''
+      
+      # Resource requirements
+      resources:
+        limits:
+          cpu: '2'
+          memory: 14Gi
+          gpu: '1'
+        requests:
+          cpu: '1'
+          memory: 10Gi
+          gpu: '1'
+      
+      # Storage URI for the model
+      storageUri: 'oci://quay.io/redhat-ai-services/modelcar-catalog:llama-3.2-3b-instruct'
+    
+    # Node selector for GPU nodes
+    nodeSelector:
+      gpu_product: NVIDIA-A10G-SHARED
+    
+    # Tolerations for GPU nodes
+    tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu
+        operator: Exists

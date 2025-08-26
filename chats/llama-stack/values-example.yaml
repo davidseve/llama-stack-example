@@ -1,0 +1,11 @@
+# Secret configuration
+secret:
+  name: llama-stack-inference-model-secret
+  data:
+    INFERENCE_MODEL: "llama-stack-example"  # Base64 encoded value
+    VLLM_URL: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox1105.opentlc.com"         # Base64 encoded value
+    VLLM_TLS_VERIFY: "false"  # Base64 encoded value
+    VLLM_API_TOKEN: "TODO"   # Base64 encoded value
+
+config:
+  enable: false

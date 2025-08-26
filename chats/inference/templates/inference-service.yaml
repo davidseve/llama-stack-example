@@ -1,0 +1,44 @@
+{{- if .Values.inferenceservice.enable }}
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  annotations:
+    openshift.io/display-name: {{ .Values.global.name }}
+  name: {{ .Values.global.name }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    opendatahub.io/dashboard: {{ .Values.global.labels.dashboard | quote }}
+spec:
+  predictor:
+    automountServiceAccountToken: {{ .Values.inferenceservice.predictor.automountServiceAccountToken }}
+    maxReplicas: {{ .Values.inferenceservice.predictor.maxReplicas }}
+    minReplicas: {{ .Values.inferenceservice.predictor.minReplicas }}
+    model:
+      args:
+        {{- range .Values.inferenceservice.predictor.model.args }}
+        - {{ . | quote }}
+        {{- end }}
+      modelFormat:
+        name: {{ .Values.inferenceservice.predictor.model.modelFormat.name }}
+      name: {{ .Values.inferenceservice.predictor.model.name | quote }}
+      resources:
+        limits:
+          cpu: {{ .Values.inferenceservice.predictor.model.resources.limits.cpu | quote }}
+          memory: {{ .Values.inferenceservice.predictor.model.resources.limits.memory }}
+          nvidia.com/gpu: {{ .Values.inferenceservice.predictor.model.resources.limits.gpu | quote }}
+        requests:
+          cpu: {{ .Values.inferenceservice.predictor.model.resources.requests.cpu | quote }}
+          memory: {{ .Values.inferenceservice.predictor.model.resources.requests.memory }}
+          nvidia.com/gpu: {{ .Values.inferenceservice.predictor.model.resources.requests.gpu | quote }}
+      runtime: {{ .Values.global.name }}
+      storageUri: {{ .Values.inferenceservice.predictor.model.storageUri | quote }}
+    nodeSelector:
+      nvidia.com/gpu.product: {{ .Values.inferenceservice.predictor.nodeSelector.gpu_product }}
+    tolerations:
+      {{- range .Values.inferenceservice.predictor.tolerations }}
+      - effect: {{ .effect }}
+        key: {{ .key }}
+        operator: {{ .operator }}
+      {{- end }}
+{{- end }}

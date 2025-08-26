@@ -1,0 +1,237 @@
+# Default values for llama-stack.
+# This is a YAML-formatted file.
+# Declare variables to be substituted into your templates.
+
+# Global configuration
+global:
+  name: llama-stack-example
+  namespace: llama-stack-example
+  labels:
+    dashboard: 'true'
+
+# LlamaStackDistribution configuration
+llamastack:
+  replicas: 1
+
+# Server configuration
+server:
+  containerSpec:
+    name: llama-stack
+    port: 8321
+    resources:
+      limits:
+        cpu: "2"
+        memory: 12Gi
+      requests:
+        cpu: 250m
+        memory: 500Mi
+    # Environment variables from secrets
+    env:
+      inferenceModel:
+        secretName: llama-stack-inference-model-secret
+        key: INFERENCE_MODEL
+      vllmUrl:
+        secretName: llama-stack-inference-model-secret
+        key: VLLM_URL
+      vllmTlsVerify:
+        secretName: llama-stack-inference-model-secret
+        key: VLLM_TLS_VERIFY
+      vllmApiToken:
+        secretName: llama-stack-inference-model-secret
+        key: VLLM_API_TOKEN
+      milvusDbPath: /tmp/milvus.db
+      fmsOrchestratorUrl: http://localhost
+
+  # Distribution configuration
+  distribution:
+    image: quay.io/opendatahub/llama-stack:odh
+
+  # Storage configuration
+  storage:
+    size: 5Gi
+
+# Application configuration values
+appConfig:
+  # Inference configuration
+  inference:
+    llama3b:
+      url: "http://llama3b-service:8000/v1"
+      model: "meta-llama/Llama-3.2-3B-Instruct"
+      token: "fake"
+    
+  # Storage configuration
+  storage:
+    sqliteStoreDir: "~/.llama/distributions/remote-vllm"
+    milvusDbPath: "/tmp/milvus.db"
+  
+  # API Keys (these should typically come from secrets)
+  apiKeys:
+    openai: ""
+    braveSearch: ""
+    tavilySearch: ""
+  
+  # Telemetry configuration
+  telemetry:
+    serviceName: "llama-stack"
+    sinks: "console, sqlite"
+    otelTraceEndpoint: ""
+    sqliteDbPath: "~/.llama/distributions/remote-vllm/trace_store.db"
+  
+  # MCP endpoints
+  mcp:
+    openshift:
+      uri: "http://ocp-mcp-server:8000/sse"
+    slack:
+      uri: "http://slack-mcp-server:80/sse"
+
+# ConfigMap containing the run.yaml configuration
+config:
+  # Run configuration (from run.yaml)
+  run:
+    version: "2"
+    imageName: remote-vllm
+    apis:
+      - agents
+      - datasetio
+      - eval
+      - inference
+      - safety
+      - scoring
+      - telemetry
+      - tool_runtime
+      - vector_io
+    
+    providers:
+      inference:
+        - provider_id: llama-3b
+          provider_type: remote::vllm
+          config:
+            url: "{{ .Values.appConfig.inference.llama3b.url }}"
+            max_tokens: 128000
+            api_token: "{{ .Values.appConfig.inference.llama3b.token }}"
+            tls_verify: false
+        - provider_id: sentence-transformers
+          provider_type: inline::sentence-transformers
+          config: {}
+      
+      vector_io:
+        - provider_id: milvus
+          provider_type: inline::milvus
+          config:
+            db_path: "{{ .Values.appConfig.storage.milvusDbPath }}"
+      
+      agents:
+        - provider_id: meta-reference
+          provider_type: inline::meta-reference
+          config:
+            persistence_store:
+              type: sqlite
+              namespace: null
+              db_path: "{{ .Values.appConfig.storage.sqliteStoreDir }}/agents_store.db"
+      
+      eval:
+        - provider_id: meta-reference
+          provider_type: inline::meta-reference
+          config:
+            kvstore:
+              type: sqlite
+              namespace: null
+              db_path: "{{ .Values.appConfig.storage.sqliteStoreDir }}/meta_reference_eval.db"
+      
+      datasetio:
+        - provider_id: huggingface
+          provider_type: remote::huggingface
+          config:
+            kvstore:
+              type: sqlite
+              namespace: null
+              db_path: "{{ .Values.appConfig.storage.sqliteStoreDir }}/huggingface_datasetio.db"
+        - provider_id: localfs
+          provider_type: inline::localfs
+          config:
+            kvstore:
+              type: sqlite
+              namespace: null
+              db_path: "{{ .Values.appConfig.storage.sqliteStoreDir }}/localfs_datasetio.db"
+      
+      scoring:
+        - provider_id: basic
+          provider_type: inline::basic
+          config: {}
+        - provider_id: llm-as-judge
+          provider_type: inline::llm-as-judge
+          config: {}
+        - provider_id: braintrust
+          provider_type: inline::braintrust
+          config:
+            openai_api_key: "{{ .Values.appConfig.apiKeys.openai }}"
+      
+      telemetry:
+        - provider_id: meta-reference
+          provider_type: inline::meta-reference
+          config:
+            service_name: "{{ .Values.appConfig.telemetry.serviceName }}"
+            sinks: "{{ .Values.appConfig.telemetry.sinks }}"
+            otel_trace_endpoint: "{{ .Values.appConfig.telemetry.otelTraceEndpoint }}"
+            sqlite_db_path: "{{ .Values.appConfig.telemetry.sqliteDbPath }}"
+      
+      tool_runtime:
+        - provider_id: brave-search
+          provider_type: remote::brave-search
+          config:
+            api_key: "{{ .Values.appConfig.apiKeys.braveSearch }}"
+            max_results: 3
+        - provider_id: tavily-search
+          provider_type: remote::tavily-search
+          config:
+            api_key: "{{ .Values.appConfig.apiKeys.tavilySearch }}"
+            max_results: 3
+        - provider_id: rag-runtime
+          provider_type: inline::rag-runtime
+          config: {}
+        - provider_id: model-context-protocol
+          provider_type: remote::model-context-protocol
+          config: {}
+    
+    metadata_store:
+      type: sqlite
+      db_path: "{{ .Values.appConfig.storage.sqliteStoreDir }}/registry.db"
+    
+    models:
+      - metadata: {}
+        model_id: "{{ .Values.appConfig.inference.llama3b.model }}"
+        provider_id: llama-3b
+        model_type: llm
+      - metadata:
+          embedding_dimension: 384
+        model_id: all-MiniLM-L6-v2
+        provider_id: sentence-transformers
+        model_type: embedding
+    
+    vector_dbs: []
+    datasets: []
+    scoring_fns: []
+    benchmarks: []
+    
+    tool_groups:
+      - toolgroup_id: builtin::websearch
+        provider_id: tavily-search
+      - toolgroup_id: builtin::rag
+        provider_id: rag-runtime
+      - toolgroup_id: mcp::openshift
+        provider_id: model-context-protocol
+        mcp_endpoint:
+          uri: "{{ .Values.appConfig.mcp.openshift.uri }}"
+      - toolgroup_id: mcp::slack
+        provider_id: model-context-protocol
+        mcp_endpoint:
+          uri: "{{ .Values.appConfig.mcp.slack.uri }}"
+
+# Secret configuration
+secret:
+  name: llama-stack-inference-model-secret
+  data:
+    INFERENCE_MODEL: ""  # Base64 encoded value
+    VLLM_URL: ""         # Base64 encoded value
+    VLLM_TLS_VERIFY: ""  # Base64 encoded value
+    VLLM_API_TOKEN: ""   # Base64 encoded value
