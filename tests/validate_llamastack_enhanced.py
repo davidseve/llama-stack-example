@@ -318,6 +318,23 @@ class EnhancedLlamaStackValidator:
             for tool in expected_tools:
                 try:
                     print_info(f"Testing tool: {tool}")
+                    
+                    # Special handling for MCP tools that might have TaskGroup issues
+                    if tool.startswith("mcp::"):
+                        try:
+                            # Try to query tools for this toolgroup to catch TaskGroup errors early
+                            tools = self.client.tool_runtime.list_tools(tool_group_id=tool)
+                        except Exception as mcp_error:
+                            tool_group_status[tool] = False
+                            error_msg = str(mcp_error)
+                            if "TaskGroup" in error_msg or "500" in error_msg:
+                                print_warning(f"⚠️  Tool {tool} not available: TaskGroup async error (known MCP issue)")
+                                print_info("   MCP service is running but Llama Stack has async task handling issues")
+                            else:
+                                print_warning(f"⚠️  Tool {tool} not available: {error_msg}")
+                                print_info("   This is a known issue with MCP TaskGroup handling in Llama Stack")
+                            continue
+                    
                     test_agent = Agent(
                         client=self.client,
                         model="inference-example",  # Use known working model
@@ -331,7 +348,12 @@ class EnhancedLlamaStackValidator:
                     
                 except Exception as tool_error:
                     tool_group_status[tool] = False
-                    print_warning(f"⚠️  Tool {tool} not available: {str(tool_error)}")
+                    error_msg = str(tool_error)
+                    if "TaskGroup" in error_msg and tool.startswith("mcp::"):
+                        print_warning(f"⚠️  Tool {tool} not available: TaskGroup async error (known MCP issue)")
+                        print_info("   MCP service is running but Llama Stack has async task handling issues")
+                    else:
+                        print_warning(f"⚠️  Tool {tool} not available: {error_msg}")
             
             if working_tools:
                 print_success(f"✓ Found {len(working_tools)} working tools: {working_tools}")

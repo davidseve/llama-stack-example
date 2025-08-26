@@ -1,0 +1,45 @@
+{{- if .Values.openshift.scc.create -}}
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: {{ include "kubernetes-mcp-server.sccName" . }}
+  labels:
+    {{- include "kubernetes-mcp-server.labels" . | nindent 4 }}
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+allowPrivilegedContainer: false
+allowedCapabilities: null
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+  ranges:
+    - min: 1001
+      max: 1001
+priority: 10
+readOnlyRootFilesystem: false
+requiredDropCapabilities:
+- ALL
+runAsUser:
+  type: MustRunAs
+  uid: 1001
+seLinuxContext:
+  type: MustRunAs
+supplementalGroups:
+  type: MustRunAs
+  ranges:
+    - min: 1001
+      max: 1001
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+users:
+- system:serviceaccount:{{ include "kubernetes-mcp-server.namespace" . }}:{{ include "kubernetes-mcp-server.serviceAccountName" . }}
+{{- end }}

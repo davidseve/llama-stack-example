@@ -1,0 +1,18 @@
+apiVersion: v2
+name: kubernetes-mcp-server
+description: A Helm chart for deploying Kubernetes MCP Server on OpenShift
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - mcp
+  - kubernetes
+  - llama-stack
+  - ai
+  - model-context-protocol
+maintainers:
+  - name: AI Team
+    email: ai-team@company.com
+sources:
+  - https://github.com/kubernetes-mcp-server/kubernetes-mcp-server
+home: https://github.com/your-org/llama-stack-example

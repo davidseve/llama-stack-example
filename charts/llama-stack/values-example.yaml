@@ -9,4 +9,4 @@ secret:
 config:
   enable: true
   # file: conf/default-run.yaml
-  file: conf/mcp-run.yaml
+  file: conf/mcp-run-alvaro.yaml

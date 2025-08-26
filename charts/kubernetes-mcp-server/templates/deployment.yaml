@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubernetes-mcp-server.fullname" . }}
+  namespace: {{ include "kubernetes-mcp-server.namespace" . }}
+  labels:
+    {{- include "kubernetes-mcp-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kubernetes-mcp-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kubernetes-mcp-server.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubernetes-mcp-server.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              echo "🔧 Installing kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}..."
+              npm install -g kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}
+              
+              echo "🎯 Starting MCP Server..."
+              echo "   - SSE Port: {{ .Values.mcpServer.ssePort }}"
+              echo "   - MCP Port: {{ .Values.mcpServer.port }}"
+              echo "   - SSE Endpoint: http://localhost:{{ .Values.mcpServer.ssePort }}/sse"
+              
+              # Handle signals properly
+              trap 'echo "Shutting down MCP Server..."; exit 0' SIGTERM SIGINT
+              
+              # Start the server in background and wait for it
+              npx -y supergateway \
+                --stdio "kubernetes-mcp-server {{ join " " .Values.mcpServer.args }}" \
+                --port {{ .Values.mcpServer.ssePort }} \
+                --mcp-port {{ .Values.mcpServer.port }} &
+              
+              # Wait for background process
+              SERVER_PID=$!
+              wait $SERVER_PID
+          ports:
+            - name: mcp-port
+              containerPort: {{ .Values.mcpServer.port }}
+              protocol: TCP
+            - name: sse-port
+              containerPort: {{ .Values.mcpServer.ssePort }}
+              protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: NPM_CONFIG_CACHE
+              value: "/tmp/.npm"
+            {{- range $key, $value := .Values.mcpServer.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
