@@ -35,6 +35,7 @@ print_usage() {
     echo "  --timeout SECONDS         Request timeout (default: 30)"
     echo "  --json-output FILE        Save results to JSON file"
     echo "  --skip-ssl-verify        Skip SSL certificate verification"
+    echo "  --verbose, -v            Enable verbose error reporting with full stack traces"
     echo "  --basic                  Run basic validation (recommended)"
     echo "  --install-deps           Install required dependencies"
     echo "  --help                   Show this help message"
@@ -50,6 +51,7 @@ print_usage() {
     echo "  $0 --url http://llamastack-service:8321 --token my-token"
     echo "  $0 --url https://llamastack.apps.example.com --skip-ssl-verify"
     echo "  $0 --url http://llamastack-service:8321 --json-output results.json"
+    echo "  $0 --url http://llamastack-service:8321 --verbose"
 }
 
 # Default values
@@ -58,6 +60,7 @@ TOKEN="${LLAMASTACK_TOKEN:-}"
 TIMEOUT=30
 JSON_OUTPUT=""
 SKIP_SSL_VERIFY=false
+VERBOSE=false
 BASIC_MODE=false
 INSTALL_DEPS=false
 
@@ -82,6 +85,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-ssl-verify)
             SKIP_SSL_VERIFY=true
+            shift
+            ;;
+        --verbose|-v)
+            VERBOSE=true
             shift
             ;;
         --basic)
@@ -169,6 +176,10 @@ if [ "$SKIP_SSL_VERIFY" = true ]; then
     CMD="$CMD --skip-ssl-verify"
 fi
 
+if [ "$VERBOSE" = true ]; then
+    CMD="$CMD --verbose"
+fi
+
 # Display environment info
 print_info "=========================================="
 print_info "LlamaStack Validation Runner"
@@ -185,6 +196,9 @@ if [ -n "$JSON_OUTPUT" ]; then
 fi
 if [ "$SKIP_SSL_VERIFY" = true ]; then
     print_info "SSL Verification: DISABLED (--skip-ssl-verify)"
+fi
+if [ "$VERBOSE" = true ]; then
+    print_info "Verbose Mode: ENABLED (detailed error reporting)"
 fi
 if [ "$BASIC_MODE" = true ]; then
     print_info "Validation Mode: BASIC (recommended for initial testing)"

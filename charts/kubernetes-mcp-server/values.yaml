@@ -19,33 +19,35 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Automatically mount a ServiceAccount's API credentials?
+  create: true
   automount: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "kubernetes-mcp-server"
 
-# RBAC configuration for Kubernetes API access
 rbac:
-  create: false
-  rules:
-    - apiGroups: [""]
-      resources: ["pods", "services", "configmaps", "secrets"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["apps"]
-      resources: ["deployments", "replicasets", "statefulsets"]
-      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-    - apiGroups: ["extensions", "networking.k8s.io"]
-      resources: ["ingresses"]
-      verbs: ["get", "list", "watch"]
+  clusterRole: "cluster-admin"
+  
+# OpenShift specific configuration
+openshift:
+  route:
+    enabled: true
+    host: ""
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+  scc:
+    create: true
+    name: "kubernetes-mcp-server-scc"
 
-podAnnotations: {}
-podLabels: {}
+# Resource limits appropriate for OpenShift
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
+# Security context for OpenShift
 podSecurityContext:
   fsGroup: 1001
   runAsNonRoot: true
@@ -97,13 +99,7 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 200m
-    memory: 256Mi
+
 
 # livenessProbe:
 #   tcpSocket:
@@ -122,12 +118,7 @@ resources:
 #   timeoutSeconds: 5
 #   failureThreshold: 3
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+
 
 # Additional volumes on the output Deployment definition.
 volumes: []
@@ -148,16 +139,3 @@ tolerations: []
 
 affinity: {}
 
-# OpenShift specific configuration
-openshift:
-  # Create OpenShift Route instead of Ingress
-  route:
-    enabled: true
-    host: ""
-    tls:
-      termination: edge
-      insecureEdgeTerminationPolicy: Redirect
-  # Security Context Constraints
-  scc:
-    create: true
-    name: "kubernetes-mcp-server-scc"

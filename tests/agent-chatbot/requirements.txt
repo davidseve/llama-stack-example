@@ -1,0 +1,27 @@
+# Llama Stack Agent Chatbot Requirements
+
+# Core Llama Stack dependencies
+llama-stack-client
+llama-stack
+
+# Environment and configuration
+python-dotenv
+
+# Terminal output formatting
+termcolor
+
+# Optional dependencies for enhanced functionality
+# Uncomment these if you have access to the respective services:
+
+# For web search capabilities
+# tavily-python
+
+# For OpenAI integration (optional)
+# openai
+
+# For enhanced HTTP requests and SSL handling
+requests
+httpx
+
+# For type hints (Python 3.5+)
+typing-extensions

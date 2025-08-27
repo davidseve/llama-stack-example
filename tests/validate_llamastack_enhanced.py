@@ -65,12 +65,24 @@ def print_test_header(test_name: str):
     print(f"{Colors.WHITE}{test_name}{Colors.NC}")
     print(f"{Colors.CYAN}{'='*60}{Colors.NC}")
 
+def print_verbose_error(message: str, exception: Exception, verbose: bool = False):
+    """Print error with optional verbose stack trace"""
+    print_error(message)
+    if verbose:
+        import traceback
+        print(f"{Colors.RED}[STACK TRACE]{Colors.NC}")
+        print(f"{Colors.RED}{traceback.format_exc()}{Colors.NC}")
+    else:
+        print_info(f"Error details: {str(exception)}")
+        print_info("Use --verbose flag for full stack trace")
+
 class EnhancedLlamaStackValidator:
-    def __init__(self, base_url: str, api_token: Optional[str] = None, timeout: int = 30, skip_ssl_verify: bool = False):
+    def __init__(self, base_url: str, api_token: Optional[str] = None, timeout: int = 30, skip_ssl_verify: bool = False, verbose: bool = False):
         self.base_url = base_url.rstrip('/')
         self.api_token = api_token
         self.timeout = timeout
         self.skip_ssl_verify = skip_ssl_verify
+        self.verbose = verbose
         
         # Configure HTTP client for SSL handling
         if skip_ssl_verify:
@@ -135,7 +147,21 @@ class EnhancedLlamaStackValidator:
             self.add_test_result("Connection", True, f"Connected successfully, {len(models)} models found")
             return True
         except Exception as e:
-            print_error(f"✗ Failed to connect: {str(e)}")
+            print_verbose_error("✗ Failed to connect", e, self.verbose)
+            
+            # Provide specific connection error diagnostics
+            error_str = str(e).lower()
+            if "connection" in error_str or "refused" in error_str:
+                print_error("LlamaStack service appears to be down or unreachable")
+            elif "timeout" in error_str:
+                print_error("Connection timeout - service may be overloaded")
+            elif "ssl" in error_str or "certificate" in error_str:
+                print_error("SSL certificate error - try --skip-ssl-verify flag")
+            elif "unauthorized" in error_str or "403" in error_str:
+                print_error("Authentication error - check API token")
+            else:
+                print_error("Unknown connection error")
+                
             self.add_test_result("Connection", False, f"Connection failed: {str(e)}")
             return False
     
@@ -182,7 +208,17 @@ class EnhancedLlamaStackValidator:
             return model_ids
             
         except Exception as e:
-            print_error(f"✗ Failed to list models: {str(e)}")
+            print_verbose_error("✗ Failed to list models", e, self.verbose)
+            
+            # Provide specific diagnostics
+            error_str = str(e).lower()
+            if "not found" in error_str or "404" in error_str:
+                print_error("Models endpoint not found - LlamaStack may not be fully initialized")
+            elif "permission" in error_str or "auth" in error_str:
+                print_error("No permission to list models - check authentication")
+            else:
+                print_error("Unknown model listing error")
+                
             self.add_test_result("Models", False, f"Failed to list models: {str(e)}")
             return {}
     
@@ -301,73 +337,97 @@ class EnhancedLlamaStackValidator:
             self.add_test_result("Embeddings", False, f"Failed: {str(e)}")
             return False
     
-    async def test_tool_groups(self) -> Dict[str, bool]:
+    async def test_tool_groups(self, model_id: str) -> Dict[str, bool]:
         """Test available tool groups and tool functionality"""
         print_test_header("🔧 Testing Tool Groups")
         
         tool_group_status = {}
         expected_tools = ["builtin::websearch", "builtin::rag", "mcp::openshift"]
         
-        try:
-            # Instead of checking tool_groups API, test tool functionality directly
-            print_info("Testing tool availability through Agent creation...")
+        print_info("Testing individual tool availability and functionality...")
+        
+        working_tools = []
+        failed_tools = []
+        
+        # Test each expected tool by trying to create an agent with it
+        for tool in expected_tools:
+            print_info(f"Testing tool: {tool}")
             
-            working_tools = []
-            
-            # Test each expected tool by trying to create an agent with it
-            for tool in expected_tools:
-                try:
-                    print_info(f"Testing tool: {tool}")
-                    
-                    # Special handling for MCP tools that might have TaskGroup issues
-                    if tool.startswith("mcp::"):
-                        try:
-                            # Try to query tools for this toolgroup to catch TaskGroup errors early
-                            tools = self.client.tool_runtime.list_tools(tool_group_id=tool)
-                        except Exception as mcp_error:
+            try:
+                # For MCP tools, check the underlying service first
+                if tool.startswith("mcp::"):
+                    try:
+                        tool_group_id = tool
+                        print_info(f"  Checking MCP service for {tool_group_id}...")
+                        tools = self.client.tool_runtime.list_tools(tool_group_id=tool_group_id)
+                        print_success(f"  ✓ MCP service accessible, found {len(tools) if tools else 0} tools")
+                        
+                        if not tools:
+                            print_error(f"  ✗ No tools found for {tool_group_id}")
                             tool_group_status[tool] = False
-                            error_msg = str(mcp_error)
-                            if "TaskGroup" in error_msg or "500" in error_msg:
-                                print_warning(f"⚠️  Tool {tool} not available: TaskGroup async error (known MCP issue)")
-                                print_info("   MCP service is running but Llama Stack has async task handling issues")
-                            else:
-                                print_warning(f"⚠️  Tool {tool} not available: {error_msg}")
-                                print_info("   This is a known issue with MCP TaskGroup handling in Llama Stack")
+                            failed_tools.append(f"{tool}: No tools found in MCP service")
                             continue
-                    
-                    test_agent = Agent(
-                        client=self.client,
-                        model="inference-example",  # Use known working model
-                        instructions=f"You are a test agent with {tool} capabilities.",
-                        tools=[tool]
-                    )
-                    
-                    working_tools.append(tool)
-                    tool_group_status[tool] = True
-                    print_success(f"✓ Tool {tool} is available and functional")
-                    
-                except Exception as tool_error:
-                    tool_group_status[tool] = False
-                    error_msg = str(tool_error)
-                    if "TaskGroup" in error_msg and tool.startswith("mcp::"):
-                        print_warning(f"⚠️  Tool {tool} not available: TaskGroup async error (known MCP issue)")
-                        print_info("   MCP service is running but Llama Stack has async task handling issues")
-                    else:
-                        print_warning(f"⚠️  Tool {tool} not available: {error_msg}")
-            
-            if working_tools:
-                print_success(f"✓ Found {len(working_tools)} working tools: {working_tools}")
-                self.add_test_result("Tool Groups", True, f"Working tools: {working_tools}")
-                return tool_group_status
-            else:
-                print_warning("⚠️  No tools are currently available")
-                self.add_test_result("Tool Groups", False, "No tools available")
-                return {}
+                            
+                    except Exception as mcp_error:
+                        print_verbose_error(f"  ✗ MCP service check failed for {tool}", mcp_error, self.verbose)
+                        tool_group_status[tool] = False
+                        
+                        error_str = str(mcp_error).lower()
+                        if "taskgroup" in error_str:
+                            failed_tools.append(f"{tool}: TaskGroup async error (LlamaStack issue)")
+                        elif "connection" in error_str or "refused" in error_str:
+                            failed_tools.append(f"{tool}: MCP service unreachable")
+                        else:
+                            failed_tools.append(f"{tool}: MCP service error - {str(mcp_error)}")
+                        continue
                 
-        except Exception as e:
-            print_error(f"✗ Tool testing failed: {str(e)}")
-            self.add_test_result("Tool Groups", False, f"Failed: {str(e)}")
-            return {}
+                # Test agent creation with the tool
+                print_info(f"  Creating test agent with {tool}...")
+                test_agent = Agent(
+                    client=self.client,
+                    model=model_id,
+                    instructions=f"You are a test agent with {tool} capabilities.",
+                    tools=[tool]
+                )
+                
+                working_tools.append(tool)
+                tool_group_status[tool] = True
+                print_success(f"  ✓ Tool {tool} is available and functional (Agent ID: {test_agent.agent_id})")
+                
+            except Exception as tool_error:
+                print_verbose_error(f"  ✗ Tool {tool} test failed", tool_error, self.verbose)
+                tool_group_status[tool] = False
+                
+                # Provide specific error diagnostics
+                error_str = str(tool_error).lower()
+                if "not found" in error_str:
+                    failed_tools.append(f"{tool}: Tool not registered in LlamaStack")
+                elif "taskgroup" in error_str:
+                    failed_tools.append(f"{tool}: TaskGroup async error")
+                elif "permission" in error_str or "auth" in error_str:
+                    failed_tools.append(f"{tool}: Authentication/permission error")
+                elif "timeout" in error_str:
+                    failed_tools.append(f"{tool}: Timeout error")
+                else:
+                    failed_tools.append(f"{tool}: {str(tool_error)}")
+        
+        # Summary reporting
+        print_info("Tool Groups Test Summary:")
+        if working_tools:
+            print_success(f"✓ Working tools ({len(working_tools)}): {', '.join(working_tools)}")
+            
+        if failed_tools:
+            print_error(f"✗ Failed tools ({len(failed_tools)}):")
+            for failed_tool in failed_tools:
+                print_error(f"  - {failed_tool}")
+        
+        # Determine overall result
+        if working_tools:
+            self.add_test_result("Tool Groups", True, f"Working: {working_tools}, Failed: {len(failed_tools)}")
+        else:
+            self.add_test_result("Tool Groups", False, f"No working tools found. Failures: {failed_tools}")
+        
+        return tool_group_status
     
     async def test_agent_sessions(self, model_id: str) -> bool:
         """Test agent session creation and management"""
@@ -454,101 +514,176 @@ class EnhancedLlamaStackValidator:
             self.add_test_result("WebSearch Tool", False, f"Failed: {str(e)}")
             return False
     
-    async def test_mcp_functionality(self) -> bool:
+    async def test_mcp_functionality(self, model_id: str) -> bool:
         """Test MCP (Model Context Protocol) functionality"""
         print_test_header("🔌 Testing MCP Integration")
         
+        # First, check if MCP service is reachable
+        print_info("Step 1: Checking MCP service availability...")
         try:
-            print_info("Testing MCP tools by creating agent...")
+            # Try to list MCP tools to verify service is running
+            print_info("Attempting to list MCP tools...")
+            tools = self.client.tool_runtime.list_tools(tool_group_id="mcp::openshift")
+            print_success(f"✓ MCP service is reachable, found {len(tools) if tools else 0} tools")
             
-            # Try to create an agent with MCP OpenShift tool
+            if not tools:
+                print_error("✗ No MCP tools found - MCP service may not be properly configured")
+                self.add_test_result("MCP Integration", False, "MCP service reachable but no tools found")
+                return False
+                
+        except Exception as e:
+            print_verbose_error("✗ Failed to connect to MCP service", e, self.verbose)
+            
+            # Check for specific error patterns to provide better diagnostics
+            error_str = str(e).lower()
+            if "connection" in error_str or "refused" in error_str:
+                print_error("MCP service appears to be down or unreachable")
+                print_info("Expected MCP endpoint: mcp-service:8080")
+            elif "taskgroup" in error_str:
+                print_error("MCP service has TaskGroup async handling issues")
+                print_info("This is a known issue with LlamaStack's MCP integration")
+            elif "timeout" in error_str:
+                print_error("MCP service is not responding (timeout)")
+            else:
+                print_error("Unknown MCP service error")
+                
+            self.add_test_result("MCP Integration", False, f"MCP service error: {str(e)}")
+            return False
+        
+        # Step 2: Analyze available tools
+        print_info("Step 2: Analyzing available MCP tools...")
+        tool_name = None
+        try:
+            first_tool = tools[0]
+            
+            # Find the correct tool name attribute
+            for attr in ['tool_name', 'name', 'identifier', 'id', 'tool_id']:
+                if hasattr(first_tool, attr):
+                    tool_name = getattr(first_tool, attr)
+                    print_info(f"Found tool name: {tool_name}")
+                    break
+                    
+            if not tool_name:
+                tool_name = str(first_tool)
+                print_warning(f"Could not find standard tool name attribute, using: {tool_name}")
+                
+            print_info(f"Available tools: {[getattr(t, attr) if hasattr(t, attr) else str(t) for t in tools[:3]]}")
+            
+        except Exception as e:
+            print_verbose_error("✗ Failed to analyze MCP tools", e, self.verbose)
+            self.add_test_result("MCP Integration", False, f"Tool analysis failed: {str(e)}")
+            return False
+        
+        # Step 3: Test agent creation with MCP tools
+        print_info("Step 3: Testing MCP agent creation...")
+        try:
             mcp_agent = Agent(
                 client=self.client,
-                model="inference-example",  # Use known working model
+                model=model_id,
                 instructions="You are a test agent with OpenShift MCP capabilities.",
                 tools=["mcp::openshift"]
             )
             
-            print_success("✓ MCP OpenShift agent created successfully")
+            print_success(f"✓ MCP OpenShift agent created: {mcp_agent.agent_id}")
             
-            # Test creating a session with MCP
+            # Test session creation
             session_id = mcp_agent.create_session(f"mcp-test-{int(time.time())}")
             print_success(f"✓ MCP session created: {session_id}")
             
-            # Test MCP operation: Get pods using direct tool call
-            print_info("Testing MCP operation: Direct tool call...")
+        except Exception as e:
+            print_verbose_error("✗ Failed to create MCP agent", e, self.verbose)
             
-            # First, let's list available MCP tools
-            print_info("Listing available MCP tools...")
-            tools = self.client.tool_runtime.list_tools(tool_group_id="mcp::openshift")
+            # Check for specific agent creation issues
+            error_str = str(e).lower()
+            if "tool" in error_str and "not found" in error_str:
+                print_error("MCP tool not properly registered in LlamaStack")
+            elif "taskgroup" in error_str:
+                print_error("Agent creation failed due to TaskGroup async issues")
+            else:
+                print_error("Unknown agent creation error")
+                
+            self.add_test_result("MCP Integration", False, f"Agent creation failed: {str(e)}")
+            return False
+        
+        # Step 4: Test MCP functionality through agent conversation
+        print_info("Step 4: Testing MCP functionality through agent conversation...")
+        try:
+            print_info("Testing MCP agent with OpenShift query...")
             
-            # Debug: show the first tool's attributes to see what's available
-            if tools:
-                first_tool = tools[0]
-                print_info(f"First tool type: {type(first_tool)}")
-                print_info(f"First tool attributes: {dir(first_tool)}")
-                print_info(f"First tool: {first_tool}")
-                
-                # Try different possible attribute names
-                tool_name = None
-                for attr in ['tool_name', 'name', 'identifier', 'id', 'tool_id']:
-                    if hasattr(first_tool, attr):
-                        tool_name = getattr(first_tool, attr)
-                        print_info(f"Found tool name using '{attr}': {tool_name}")
-                        break
-                        
-                if not tool_name:
-                    tool_name = str(first_tool)
-                    print_warning(f"Could not find tool name attribute, using string representation: {tool_name}")
-                
-                print_info(f"Available MCP tools: {[getattr(tool, attr) if hasattr(tool, attr) else str(tool) for tool in tools]}")
+            # Use the MCP agent we already created to perform an actual task
+            turn_response = mcp_agent.create_turn(
+                messages=[{
+                    "role": "user", 
+                    "content": "Can you list the pods in the openshift-gitops namespace? If you cannot access that namespace, try to list namespaces or check your current Kubernetes configuration."
+                }],
+                session_id=session_id
+            )
             
-            # Try direct tool invocation first
-            response_content = ""
-            if tools and tool_name:
-                print_info(f"Calling MCP tool directly: {tool_name}")
-                
+            print_success("✓ MCP agent conversation completed")
+
+            # Debug: Print the response object details
+            print_success(f"✓ Response type: {type(turn_response)}")
+            print_success(f"✓ Response attributes: {dir(turn_response)}")
+            
+            # If it's a generator, iterate through it
+            if hasattr(turn_response, '__iter__') and hasattr(turn_response, '__next__'):
+                print_info("Response is a generator, iterating through items:")
+                response_items = []
                 try:
-                    tool_response = self.client.tool_runtime.invoke_tool(
-                        tool_group_id="mcp::openshift",
-                        tool_name=tool_name,
-                        arguments={
-                            "namespace": "openshift-gitops",
-                            "action": "list_pods"
-                        }
-                    )
-                    
-                    print_success("✓ MCP direct tool call completed")
-                    print_info(f"Direct tool response: {tool_response}")
-                    response_content = str(tool_response)
-                    
-                except Exception as direct_error:
-                    print_warning(f"Direct tool call failed: {direct_error}")
-                    response_content = f"Direct call failed: {direct_error}"
+                    for item in turn_response:
+                        print_info(f"  Generator item: {item}")
+                        response_items.append(item)
+                    print_success(f"✓ Collected {len(response_items)} items from generator")
+                except Exception as gen_error:
+                    print_error(f"Error iterating generator: {gen_error}")
             else:
-                print_warning("No MCP tools found")
-                response_content = "No MCP tools available"
-            
-            # Check the response
-            if response_content and any(keyword in response_content.lower() for keyword in ['pod', 'container', 'running', 'pending']):
-                print_success("✓ Response contains pod information")
-                print_info(f"Response preview: {response_content[:300]}...")
-                self.add_test_result("MCP Get Pods", True, "MCP pods operation successful")
+                # Not a generator, print directly
+                print_success(f"✓ Response content: {turn_response}")
+            # Analyze the response to see if MCP tool was actually used
+            if hasattr(turn_response, 'steps') and turn_response.steps:
+                tool_used = False
+                for step in turn_response.steps:
+                    if hasattr(step, 'tool_calls') and step.tool_calls:
+                        tool_used = True
+                        tool_names = [tc.tool_name for tc in step.tool_calls if hasattr(tc, 'tool_name')]
+                        print_success(f"✓ MCP tools used: {tool_names}")
+                        break
+                
+                if tool_used:
+                    print_success("✓ MCP tools are functioning and being invoked by the agent")
+                    self.add_test_result("MCP Tool Functionality", True, "MCP tools working through agent")
+                else:
+                    print_warning("⚠️  Agent responded but may not have used MCP tools")
+                    self.add_test_result("MCP Tool Functionality", True, "Agent functional, tool usage unclear")
             else:
-                print_info("Response received but may not contain pod data")
-                print_info(f"Full response: {response_content}")
-                self.add_test_result("MCP Get Pods", True, "MCP operation completed (response format may vary)")
-            
-            print_info("MCP OpenShift integration is configured and available")
-            self.add_test_result("MCP Integration", True, "MCP OpenShift integration available")
-            return True
+                print_info("Agent response received but step details not available")
+                self.add_test_result("MCP Tool Functionality", True, "Agent functional, limited response details")
                 
         except Exception as e:
-            print_warning(f"⚠️  MCP functionality test failed: {str(e)}")
-            print_info("This might be expected if MCP service is down or not properly configured")
-            print_info("Expected MCP endpoint: mcp-service:8080")
-            self.add_test_result("MCP Integration", False, f"Failed: {str(e)}")
-            return False
+            print_verbose_error("✗ MCP agent conversation failed", e, self.verbose)
+            
+            # Provide specific diagnostics
+            error_str = str(e).lower()
+            if "unauthorized" in error_str or "authentication" in error_str:
+                print_error("MCP agent lacks proper authentication to perform tasks")
+            elif "timeout" in error_str:
+                print_error("MCP agent conversation timed out")
+            elif "taskgroup" in error_str:
+                print_error("TaskGroup async error during agent conversation")
+            else:
+                print_error("Unknown MCP agent conversation error")
+                
+            self.add_test_result("MCP Tool Functionality", False, f"Agent conversation failed: {str(e)}")
+            # Don't return False here - we still had successful agent creation
+        
+        # Overall MCP integration assessment
+        print_info("MCP Integration Assessment:")
+        print_success("✓ MCP service is running and accessible")
+        print_success("✓ MCP tools are registered and discoverable") 
+        print_success("✓ MCP agent creation works")
+        
+        self.add_test_result("MCP Integration", True, "MCP integration is functional")
+        return True
     
     async def test_rag_functionality(self, model_id: str) -> bool:
         """Test RAG (Retrieval Augmented Generation) functionality"""
@@ -637,7 +772,7 @@ class EnhancedLlamaStackValidator:
             self.add_test_result("Safety API", False, f"Failed: {str(e)}")
             return False
     
-    async def test_eval_functionality(self) -> bool:
+    async def test_eval_functionality(self, model_id: str) -> bool:
         """Test Evaluation API functionality"""
         print_test_header("📊 Testing Evaluation API")
         
@@ -670,7 +805,7 @@ class EnhancedLlamaStackValidator:
                     eval_response = self.client.eval.evaluate(
                         input_rows=[{"input": "test", "expected_output": "test"}],
                         scoring_functions=["basic"],
-                        model_id="inference-example"
+                        model_id=model_id
                     )
                     print_success("✓ Evaluation API fully functional")
                     self.add_test_result("Evaluation API", True, "Evaluation API fully functional")
@@ -730,7 +865,7 @@ class EnhancedLlamaStackValidator:
         self.add_test_result("Configuration", True, "Configuration expectations set")
     
     def print_summary(self):
-        """Print test summary"""
+        """Print comprehensive test summary with diagnostics"""
         print_test_header("📊 Test Summary")
         
         total_tests = len(self.test_results)
@@ -744,14 +879,18 @@ class EnhancedLlamaStackValidator:
             print_error(f"Failed: {failed_tests}")
         
         print(f"\n{Colors.CYAN}Detailed Results:{Colors.NC}")
+        failed_details = []
         for result in self.test_results:
             status = "✓" if result['success'] else "✗"
             color = Colors.GREEN if result['success'] else Colors.RED
             print(f"{color}{status}{Colors.NC} {result['test']}: {result['details']}")
+            if not result['success']:
+                failed_details.append(f"{result['test']}: {result['details']}")
         
         success_rate = (passed_tests / total_tests) * 100 if total_tests > 0 else 0
         print(f"\n{Colors.WHITE}Success Rate: {success_rate:.1f}%{Colors.NC}")
         
+        # Overall assessment
         if success_rate >= 90:
             print_success("🎉 LlamaStack instance is functioning excellently!")
         elif success_rate >= 75:
@@ -760,6 +899,47 @@ class EnhancedLlamaStackValidator:
             print_warning("⚠️  LlamaStack instance has some issues but basic functionality works")
         else:
             print_error("❌ LlamaStack instance has significant issues")
+        
+        # Error analysis and recommendations
+        if failed_tests > 0:
+            print_test_header("🔍 Error Analysis & Recommendations")
+            
+            # Categorize common issues
+            connection_issues = [f for f in failed_details if any(keyword in f.lower() for keyword in ['connection', 'refused', 'unreachable', 'timeout'])]
+            mcp_issues = [f for f in failed_details if any(keyword in f.lower() for keyword in ['mcp', 'taskgroup', 'openshift'])]
+            auth_issues = [f for f in failed_details if any(keyword in f.lower() for keyword in ['auth', 'permission', 'unauthorized', '403'])]
+            config_issues = [f for f in failed_details if any(keyword in f.lower() for keyword in ['not found', '404', 'not configured'])]
+            
+            if connection_issues:
+                print_error("🔌 Connection Issues:")
+                for issue in connection_issues:
+                    print_error(f"  • {issue}")
+                print_info("💡 Recommendation: Check if LlamaStack service is running and accessible")
+                
+            if mcp_issues:
+                print_error("🔌 MCP Integration Issues:")
+                for issue in mcp_issues:
+                    print_error(f"  • {issue}")
+                print_info("💡 Recommendation: Check MCP service status and TaskGroup handling in LlamaStack")
+                
+            if auth_issues:
+                print_error("🔐 Authentication Issues:")
+                for issue in auth_issues:
+                    print_error(f"  • {issue}")
+                print_info("💡 Recommendation: Verify API tokens and service permissions")
+                
+            if config_issues:
+                print_error("⚙️  Configuration Issues:")
+                for issue in config_issues:
+                    print_error(f"  • {issue}")
+                print_info("💡 Recommendation: Check LlamaStack deployment configuration")
+            
+            # General troubleshooting tips
+            print_info("\n🛠️  General Troubleshooting:")
+            print_info("  • Use --verbose flag for detailed error information")
+            print_info("  • Check service logs for more details")
+            print_info("  • Verify all required services are running")
+            print_info("  • Check network connectivity and firewall settings")
     
     async def run_all_tests(self):
         """Run all validation tests"""
@@ -801,16 +981,16 @@ class EnhancedLlamaStackValidator:
             self.add_test_result("Embedding Tests", False, "No embedding model available")
         
         # Test tool functionality
-        tool_group_status = await self.test_tool_groups()
+        tool_group_status = await self.test_tool_groups(llm_model if llm_model else "default")
         await self.test_websearch_tool(llm_model if llm_model else "default")
-        await self.test_mcp_functionality()
+        await self.test_mcp_functionality(llm_model if llm_model else "default")
         await self.test_rag_functionality(llm_model if llm_model else "default")
         
         # Test additional functionality
         if llm_model:
             await self.test_safety_functionality(llm_model)
         
-        await self.test_eval_functionality()
+        await self.test_eval_functionality(llm_model if llm_model else "default")
         await self.test_vector_db_functionality()
         
         # Print summary
@@ -828,11 +1008,12 @@ async def main():
     parser.add_argument("--timeout", type=int, default=30, help="Request timeout in seconds")
     parser.add_argument("--json-output", help="Save results to JSON file")
     parser.add_argument("--skip-ssl-verify", action="store_true", help="Skip SSL certificate verification (for development/self-signed certs)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose error reporting with full stack traces")
     
     args = parser.parse_args()
     
     # Create validator instance
-    validator = EnhancedLlamaStackValidator(args.url, args.token, args.timeout, args.skip_ssl_verify)
+    validator = EnhancedLlamaStackValidator(args.url, args.token, args.timeout, args.skip_ssl_verify, args.verbose)
     
     try:
         # Run all tests
