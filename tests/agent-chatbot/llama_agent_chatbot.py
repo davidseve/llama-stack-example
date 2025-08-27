@@ -425,7 +425,7 @@ Your goal is to be as helpful as possible while leveraging all available tools e
         
     def test_kubernetes_query(self):
         """Test the specific Kubernetes query requested by the user"""
-        test_query = "Can you list the pods in the openshift-gitops namespace? If you cannot access that namespace, try to list namespaces or check your current Kubernetes configuration."
+        test_query = "Can you list the pods in the openshift-gitops namespace? If you cannot access that namespace, try to list namespaces or check your current Kubernetes configuration. from the list tell me what does each pod use for"
         
         cprint("\n" + "="*80, "cyan")
         cprint("🧪 Testing Kubernetes Query", "cyan", attrs=['bold'])
