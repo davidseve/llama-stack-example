@@ -27,11 +27,11 @@ spec:
             secretKeyRef:
               key: VLLM_TLS_VERIFY
               name: {{ .Values.global.name }}-secret
-        # - name: VLLM_API_TOKEN
-        #   valueFrom:
-        #     secretKeyRef:
-        #       key: VLLM_API_TOKEN
-        #       name: {{ .Values.global.name }}-secret
+        - name: VLLM_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: VLLM_API_TOKEN
+              name: {{ .Values.global.name }}-secret
         - name: MILVUS_DB_PATH
           value: {{ .Values.server.containerSpec.env.milvusDbPath | quote }}
         - name: FMS_ORCHESTRATOR_URL

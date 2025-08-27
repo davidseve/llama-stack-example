@@ -2,10 +2,9 @@
 secret:
   name: llama-stack-inference-model-secret
   data:
-    INFERENCE_MODEL: "inference-example"  # Base64 encoded value
-    VLLM_URL: "https://inference-example-llama-stack-example.apps.ocp.sandbox2695.opentlc.com/v1"         # Base64 encoded value
+    INFERENCE_MODEL: "llama-3-2-3b"  # Base64 encoded value
+    VLLM_URL: "https://llama-3-2-3b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"         # Base64 encoded value
     VLLM_TLS_VERIFY: "false"  # Base64 encoded value
-
 config:
   enable: true
   # file: conf/default-run.yaml

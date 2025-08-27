@@ -9,6 +9,8 @@ global:
   labels:
     dashboard: 'true'
 
+project:
+  autocreate: true
 route:
   enable: true
 

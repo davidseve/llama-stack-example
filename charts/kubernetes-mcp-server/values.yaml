@@ -4,13 +4,7 @@
 
 # Global configuration
 global:
-  # Namespace where to deploy the resources
-  # If not specified, will use the namespace from the Helm release
-  # Examples:
-  #   namespace: "llama-stack"
-  #   namespace: "ai-services" 
-  #   namespace: "production"
-  namespace: ""
+  namespace: llama-stack-example
 
 replicaCount: 1
 

@@ -41,5 +41,5 @@ volumes:
 - projected
 - secret
 users:
-- system:serviceaccount:{{ include "kubernetes-mcp-server.namespace" . }}:{{ include "kubernetes-mcp-server.serviceAccountName" . }}
+- system:serviceaccount:{{ .Values.global.namespace }}:{{ include "kubernetes-mcp-server.serviceAccountName" . }}
 {{- end }}
