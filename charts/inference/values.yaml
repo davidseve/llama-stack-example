@@ -89,7 +89,7 @@ inferenceservice:
       # Model arguments for vLLM
       args:
         - '--dtype=half'
-        - '--max-model-len=20000'
+        - '--max-model-len=128000'
         - '--gpu-memory-utilization=0.95'
         - '--enable-chunked-prefill'
         - '--enable-auto-tool-choice'
