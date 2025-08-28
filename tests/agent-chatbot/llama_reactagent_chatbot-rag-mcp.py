@@ -9,7 +9,8 @@ import httpx
 import logging
 from dotenv import load_dotenv
 from llama_stack_client import LlamaStackClient, RAGDocument
-from llama_stack_client.lib.agents.agent import Agent
+from llama_stack_client.lib.agents.react.agent import ReActAgent
+from llama_stack_client.lib.agents.react.tool_parser import ReActOutput
 
 # Suppress httpx INFO logs
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -33,74 +34,80 @@ class LlamaStackChatbot:
         # Setup client with SSL and auth
         self._setup_client()
         
+        # Verify and register MCP toolgroups
+        self._verify_mcp_tools()
+        
         # Load Discounts application documentation into RAG
         self.load_discounts_application_documents()
         
-        # Create separate agents for different tool types to avoid parallel tool calls
-        openshift_tools = ["mcp::openshift"]
-        rag_tools = [{
-            "name": "builtin::rag",
-            "args": {
-                "vector_db_ids": [self.vector_db_id],
-                "top_k": 5
+        # Setup agent with all available tools
+        # Configure RAG tool with vector DB IDs
+        available_tools = [
+            "mcp::openshift",
+            {
+                "name": "builtin::rag",
+                "args": {
+                    "vector_db_ids": [self.vector_db_id],
+                    "top_k": 5
+                }
             }
-        }]
+        ]
         
-        base_instructions = """
-You are an expert software engineer and DevOps specialist for applications. Your primary goal is to help users understand, configure, and troubleshoot the application system and its components.
+        instructions = """
+You are an expert software engineer and DevOps specialist powered by ReAct (Reason-then-Act) methodology. Your primary goal is to help users understand, configure, and troubleshoot application systems through systematic reasoning and intelligent tool usage.
 
-**Important:** Make only ONE tool call at a time. The system does not support simultaneous tool calls.
-"""
-        
-        openshift_instructions = base_instructions + """
-**Your Role:** You specialize in OpenShift/Kubernetes operations. Use the OpenShift MCP tool to:
-- List pods, deployments, services, and other resources
-- Check logs and status information
-- Investigate system-level issues
-- Monitor cluster health and resource usage
-"""
+**ReAct Reasoning Framework:**
 
-        rag_instructions = base_instructions + """
-**Your Role:** You specialize in application knowledge and troubleshooting. Use the RAG knowledge base to:
-- Search for application configuration details
-- Find troubleshooting guides and solutions
-- Provide context about discount application architecture
-- Suggest fixes based on documented best practices
-"""
-        
-        # Create OpenShift-focused agent
-        self.openshift_agent = Agent(
+1. **REASON:** Before taking any action, clearly think through:
+   - What information do I need to solve this problem?
+   - Which tools are most appropriate for gathering this information?
+   - What is my step-by-step approach to address the user's request?
+
+2. **ACT:** Execute your reasoning by using the appropriate tools:
+   - Use mcp::openshift for real-time system data, pod status, logs, and cluster information
+   - Use builtin::rag to search knowledge base for configuration guides, troubleshooting procedures, and best practices
+   - Combine multiple tools when needed to get complete information
+
+3. **OBSERVE:** Analyze the results from your actions and determine:
+   - Did I get the information I need?
+   - Do I need additional data or clarification?
+   - What patterns or issues can I identify?
+
+4. **REASON AGAIN:** Based on observations, determine next steps:
+   - Continue gathering more specific information
+   - Synthesize findings into actionable recommendations
+   - Provide clear explanations and solutions
+
+**Standard Operating Procedure for Problem Solving:**
+
+When a user reports application issues (API failures, database problems, performance issues, etc.):
+- **REASON**: Break down the problem into specific diagnostic steps
+- **ACT**: Use tools systematically to gather both real-time system data AND documentation
+- **OBSERVE**: Analyze results and correlate system state with known patterns
+- **REASON & ACT**: Provide synthesized recommendations with supporting evidence
+
+**Your Expertise Areas:**
+- Application deployment and configuration troubleshooting
+- Discount calculation algorithms and business logic
+- System monitoring, logging, and performance analysis
+- API endpoint management and integration patterns
+- Database connectivity and optimization
+- Container orchestration and Kubernetes diagnostics
+
+Always reason through problems step-by-step, use tools intelligently, and provide clear, actionable guidance based on both real-time data and documented best practices.
+
+**CRITICAL**: When you need to use tools, set "answer": null in your response. Only provide "answer" with actual results after tool execution is complete.
+"""   
+        self.agent = ReActAgent(
             client=self.client,
             model=self.model_id,
-            instructions=openshift_instructions,
-            tools=openshift_tools,
-            sampling_params=self.sampling_params,
-            max_infer_iters=1,  # Single tool call only
-            enable_session_persistence=True
-        )
-        
-        # Create RAG-focused agent 
-        self.rag_agent = Agent(
-            client=self.client,
-            model=self.model_id,
-            instructions=rag_instructions,
-            tools=rag_tools,
-            sampling_params=self.sampling_params,
-            max_infer_iters=1,  # Single tool call only
-            enable_session_persistence=True
-        )
-        
-        # Keep a general agent without tools for synthesis
-        self.general_agent = Agent(
-            client=self.client,
-            model=self.model_id,
-            instructions=base_instructions + """
-**Your Role:** You synthesize information from system investigations and knowledge base searches to provide comprehensive responses to user queries about application troubleshooting and management.
-""",
-            tools=[],  # No tools - just for synthesis
-            sampling_params=self.sampling_params,
-            max_infer_iters=1,
-            enable_session_persistence=True
+            instructions=instructions,
+            tools=available_tools,
+            response_format={
+                "type": "json_schema",
+                "json_schema": ReActOutput.model_json_schema(),
+            },
+            sampling_params={"max_tokens": 1024, "temperature": 0.1}  # Increased tokens for complex reasoning
         )
     
     def _setup_client(self):
@@ -133,6 +140,33 @@ You are an expert software engineer and DevOps specialist for applications. Your
         #     client_kwargs["provider_data"] = provider_data
         
         self.client = LlamaStackClient(**client_kwargs)
+    
+    def _verify_mcp_tools(self):
+        """Verify that MCP toolgroups are registered and working"""
+        print("🔍 Verifying MCP toolgroups...")
+        
+        try:
+            # List registered toolgroups
+            registered_toolgroups = {tg.identifier for tg in self.client.toolgroups.list()}
+            print(f"🔗 Registered toolgroups: {registered_toolgroups}")
+            
+            # List all tools
+            all_tools = self.client.tools.list()
+            print(f"🛠️  Total tools available: {len(all_tools)}")
+            
+            # Check MCP OpenShift tools specifically
+            openshift_tools = [t for t in all_tools if t.toolgroup_id == "mcp::openshift"]
+            if openshift_tools:
+                print(f"✅ OpenShift MCP tools found: {len(openshift_tools)}")
+                for tool in openshift_tools:
+                    print(f"   - {tool.identifier}")
+            else:
+                print(f"❌ No OpenShift MCP tools found!")
+                print(f"🔧 Available toolgroups: {registered_toolgroups}")
+                
+        except Exception as e:
+            print(f"❌ Error verifying MCP tools: {e}")
+            print(f"🔧 This could indicate MCP server connection issues")
     
     def load_discounts_application_documents(self):
         """Load Discounts Application documentation into RAG"""
@@ -426,99 +460,26 @@ You are an expert software engineer and DevOps specialist for applications. Your
             # Continue without RAG functionality
     
     def create_session(self):
-        """Create sessions for all agents"""
-        self.openshift_session_id = self.openshift_agent.create_session("openshift-session")
-        self.rag_session_id = self.rag_agent.create_session("rag-session")
-        self.general_session_id = self.general_agent.create_session("general-session")
+        """Create a new agent session"""
+        self.session_id = self.agent.create_session("chatbot-session")
     
     def chat(self, message: str):
-        """Send a message to the appropriate agent and get response"""
+        """Send a message to the agent and get response"""
         try:
-            if not hasattr(self, 'openshift_session_id'):
+            if not self.session_id:
                 self.create_session()
             
-            print(f"\n🤖 Processing query: '{message}'")
+            print(f"\n🧠 ReActAgent Processing: '{message}'")
             print(f"📊 RAG Status: {'✅ Loaded' if self.rag_loaded else '❌ Not loaded'}")
-            print("=" * 50)
+            print(f"🛠️  Available tools: mcp::openshift, builtin::rag")
+            print(f"🔄 Using ReAct methodology: Reason → Act → Observe → Reason...")
+            print("=" * 60)
             
-            # Check if this query might need both OpenShift info and RAG knowledge
-            needs_openshift = any(keyword in message.lower() for keyword in ['pod', 'namespace', 'deployment', 'service', 'openshift', 'kubectl', 'cluster'])
-            needs_rag = any(keyword in message.lower() for keyword in ['discount', 'application', 'troubleshoot', 'error', 'configuration', 'issue'])
-            
-            if needs_openshift and needs_rag:
-                print("🔄 Detected complex query requiring both OpenShift and RAG data")
-                
-                # First, get OpenShift information
-                openshift_query = f"List the pods in the openshift-gitops namespace and provide system information"
-                print(f"\n📍 Step 1: OpenShift agent")
-                print(f"🛠️  Using: mcp::openshift")
-                openshift_response = self.openshift_agent.create_turn(
-                    messages=[{"role": "user", "content": openshift_query}],
-                    session_id=self.openshift_session_id,
-                    stream=False
-                )
-                print(f"🔍 OpenShift response: {openshift_response}")
-                
-                # Then, get RAG information  
-                rag_query = f"Search for information about 'Discount Calculation Incorrect' troubleshooting"
-                print(f"\n📍 Step 2: RAG agent")
-                print(f"🛠️  Using: builtin::rag")
-                rag_response = self.rag_agent.create_turn(
-                    messages=[{"role": "user", "content": rag_query}],
-                    session_id=self.rag_session_id,
-                    stream=False
-                )
-                print(f"🔍 RAG response: {rag_response}")
-                # Combine responses using general agent
-                print(f"\n📍 Step 3: Synthesis")
-                openshift_content = openshift_response.output_message.content if openshift_response else "No OpenShift data available"
-                rag_content = rag_response.output_message.content if rag_response else "No RAG data available"
-                
-                combined_query = f"""Based on the following information, provide a comprehensive analysis:
-
-OPENSHIFT SYSTEM DATA:
-{openshift_content}
-
-APPLICATION KNOWLEDGE:
-{rag_content}
-
-Original user query: {message}
-
-Please synthesize this information to provide a complete response."""
-
-                print(f"🔍 Combined query: {combined_query}")
-                response = self.general_agent.create_turn(
-                    messages=[{"role": "user", "content": combined_query}],
-                    session_id=self.general_session_id,
-                    stream=False
-                )
-                
-            elif needs_openshift:
-                print("🔄 Using OpenShift agent")
-                print(f"🛠️  Using: mcp::openshift")
-                response = self.openshift_agent.create_turn(
-                    messages=[{"role": "user", "content": message}],
-                    session_id=self.openshift_session_id,
-                    stream=False
-                )
-                
-            elif needs_rag:
-                print("🔄 Using RAG agent")
-                print(f"🛠️  Using: builtin::rag")
-                response = self.rag_agent.create_turn(
-                    messages=[{"role": "user", "content": message}],
-                    session_id=self.rag_session_id,
-                    stream=False
-                )
-                
-            else:
-                print("🔄 Using general agent")
-                print(f"🛠️  Using: no tools (general knowledge)")
-                response = self.general_agent.create_turn(
-                    messages=[{"role": "user", "content": message}],
-                    session_id=self.general_session_id,
-                    stream=False
-                )
+            response = self.agent.create_turn(
+                messages=[{"role": "user", "content": message}],
+                session_id=self.session_id,
+                stream=False
+            )
             
             # Print detailed response information
             print("\n📋 AGENT RESPONSE:")
@@ -541,11 +502,9 @@ Please synthesize this information to provide a complete response."""
                         for tool_call in step.tool_calls:
                             print(f"      Tool: {tool_call.tool_name}")
             
+            print(response)
             print(f"\n💬 Response:")
-            if hasattr(response, 'output_message') and response.output_message:
-                print(response.output_message.content)
-            else:
-                print("No response content available")
+            print(response.output_message.content)
             
             return response
             
@@ -562,7 +521,7 @@ def main():
         chatbot.create_session()
         
         # Test query - should trigger mcp::openshift tool for MCP server investigation
-        query = "list the pods in the openshift-gitops namespace, give to me all the information you can have about discounts application Discount Calculation Incorrect"
+        query = "list the pods in the openshift-gitops namespace, give to me all the information you can have about discounts application in the namespace and how Calculation Incorrect is done. follow the main instructions"
         print(f"Query: {query}")
         chatbot.chat(query)
         

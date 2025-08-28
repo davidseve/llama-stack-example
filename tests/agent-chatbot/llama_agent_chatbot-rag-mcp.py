@@ -458,7 +458,7 @@ def main():
         chatbot.create_session()
         
         # Test query - should trigger mcp::openshift tool for MCP server investigation
-        query = "list the pods in the openshift-gitops namespace, give to me all the information you can have about discounts application Discount Calculation Incorrect"
+        query = "list the pods in the openshift-gitops namespace, give to me all the information you can have about discounts application in the namespace and how Calculation Incorrect is done. follow the main instructions"
         print(f"Query: {query}")
         chatbot.chat(query)
         
