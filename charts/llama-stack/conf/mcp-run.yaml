@@ -109,9 +109,9 @@ providers:
   - provider_id: kubernetes-mcp-server
     provider_type: remote::model-context-protocol
     config:
-      url: ${env.KUBERNETES_MCP_URL:=http://kubernetes-mcp-example-kubernetes-mcp-server:8080}
-      api_token: ${env.KUBERNETES_MCP_API_TOKEN:=}
-      tls_verify: ${env.KUBERNETES_MCP_TLS_VERIFY:=false}
+      url: http://kubernetes-mcp-example-kubernetes-mcp-server:8080
+      api_token: ""
+      tls_verify: false
 metadata_store:
   type: sqlite
   db_path: /opt/app-root/src/.llama/distributions/rh/registry.db
@@ -130,7 +130,11 @@ models:
   provider_model_id: ibm-granite/granite-embedding-125m-english
   model_type: embedding
 shields: []
-vector_dbs: []
+vector_dbs:
+- vector_db_id: my_documents
+  embedding_model: granite-embedding-125m
+  embedding_dimension: 768
+  provider_id: milvus
 datasets: []
 scoring_fns: []
 benchmarks: []
@@ -139,10 +143,10 @@ tool_groups:
   provider_id: tavily-search
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
-- toolgroup_id: mcp::kubernetes
+- toolgroup_id: mcp::openshift
   provider_id: kubernetes-mcp-server
   mcp_endpoint:
-    uri: "${env.KUBERNETES_MCP_URL:=http://kubernetes-mcp-example-kubernetes-mcp-server:8080}/sse"
+    uri: "http://kubernetes-mcp-example-kubernetes-mcp-server:8080/sse"
 server:
   port: 8321
 external_providers_dir: /opt/app-root/src/.llama/providers.d
