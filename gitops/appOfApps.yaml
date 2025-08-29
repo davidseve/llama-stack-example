@@ -14,9 +14,6 @@ spec:
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
-  parameters:
-    - name: VLLM_API_TOKEN: ${VLLM_API_TOKEN}
-      value: ${VLLM_API_TOKEN}
   syncPolicy:
     automated:
       prune: true
