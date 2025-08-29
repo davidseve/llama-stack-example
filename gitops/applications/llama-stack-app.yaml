@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: model-inference
+  name: llama-stack
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
@@ -11,13 +11,18 @@ spec:
     server: 'https://kubernetes.default.svc'
   project: default
   source: 
-    path: charts/inference
+    path: charts/llama-stack
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
     helm:
       valueFiles:
       - ../../gitops/values-common.yaml
-      - ../../gitops/inference/values-inference.yaml
+      - ../../gitops/llama-stack-values.yaml
+      values: |
+        secret:
+          data:
+            VLLM_API_TOKEN: ${VLLM_API_TOKEN}
+      
   syncPolicy:
     automated:
       prune: true

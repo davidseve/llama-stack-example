@@ -5,6 +5,7 @@ secret:
     INFERENCE_MODEL: "llama-4-scout-17b-16e-w4a16"  # Base64 encoded value
     VLLM_URL: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"         # Base64 encoded value
     VLLM_TLS_VERIFY: "false"  # Base64 encoded value
+    VLLM_API_TOKEN: ""  # Base64 encoded value - will be substituted by ArgoCD
 config:
   enable: true
   # file: conf/default-run.yaml
