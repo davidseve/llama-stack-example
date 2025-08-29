@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: appOfApps
+  name: app-of-apps
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
@@ -14,6 +14,11 @@ spec:
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
+    helm:
+      values: |
+        secret:
+          data:
+            VLLM_API_TOKEN: adc4703954446aed81b7ea0f18f97daa
   syncPolicy:
     automated:
       prune: true

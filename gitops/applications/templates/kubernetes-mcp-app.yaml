@@ -11,7 +11,7 @@ spec:
     server: 'https://kubernetes.default.svc'
   project: default
   source: 
-    path: charts/kubernetes-mcp
+    path: charts/kubernetes-mcp-server
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
     helm:
