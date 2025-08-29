@@ -21,7 +21,7 @@ spec:
       values: |
         secret:
           data:
-            VLLM_API_TOKEN: ${VLLM_API_TOKEN}
+            VLLM_API_TOKEN: ${TOKEN}
       
   syncPolicy:
     automated:
