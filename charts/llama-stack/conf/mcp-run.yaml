@@ -31,30 +31,6 @@ providers:
         type: sqlite
         namespace: null
         db_path: /opt/app-root/src/.llama/distributions/rh/milvus_registry.db
-  safety:
-    - provider_id: trustyai_fms
-      provider_type: remote::trustyai_fms
-      config:
-        orchestrator_url: ${env.FMS_ORCHESTRATOR_URL:=}
-        ssl_cert_path: ${env.FMS_SSL_CERT_PATH:=}
-        shields: {}
-  agents:
-  - provider_id: meta-reference
-    provider_type: inline::meta-reference
-    config:
-      persistence_store:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/agents_store.db
-      responses_store:
-        type: sqlite
-        db_path: /opt/app-root/src/.llama/distributions/rh/responses_store.db
-  eval:
-  - provider_id: trustyai_lmeval
-    provider_type: remote::trustyai_lmeval
-    config:
-        use_k8s: True
-        base_url: ${env.VLLM_URL:=http://localhost:8000/v1}
   datasetio:
   - provider_id: huggingface
     provider_type: remote::huggingface
@@ -81,28 +57,7 @@ providers:
     provider_type: inline::braintrust
     config:
       openai_api_key: ${env.OPENAI_API_KEY:=}
-  telemetry:
-  - provider_id: meta-reference
-    provider_type: inline::meta-reference
-    config:
-      service_name: "${env.OTEL_SERVICE_NAME:=\u200B}"
-      sinks: ${env.TELEMETRY_SINKS:=console,sqlite}
-      sqlite_db_path: /opt/app-root/src/.llama/distributions/rh/trace_store.db
-      otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
   tool_runtime:
-  - provider_id: brave-search
-    provider_type: remote::brave-search
-    config:
-      api_key: ${env.BRAVE_SEARCH_API_KEY:=}
-      max_results: 3
-  - provider_id: tavily-search
-    provider_type: remote::tavily-search
-    config:
-      api_key: ${env.TAVILY_SEARCH_API_KEY:=}
-      max_results: 3
-  # - provider_id: code-interpreter
-  #   provider_type: inline::code-interpreter
-  #   config: {}
   - provider_id: rag-runtime
     provider_type: inline::rag-runtime
     config: {}
@@ -136,8 +91,6 @@ datasets: []
 scoring_fns: []
 benchmarks: []
 tool_groups:
-- toolgroup_id: builtin::websearch
-  provider_id: tavily-search
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
 - toolgroup_id: mcp::openshift

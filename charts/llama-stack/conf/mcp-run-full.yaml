@@ -17,7 +17,7 @@ providers:
     config:
       url: ${env.VLLM_URL:=http://localhost:8000/v1}
       max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
-      # api_token: ${env.VLLM_API_TOKEN:=fake}
+      api_token: ${env.VLLM_API_TOKEN:=fake}
       tls_verify: ${env.VLLM_TLS_VERIFY:=true}
   - provider_id: sentence-transformers
     provider_type: inline::sentence-transformers
@@ -100,10 +100,13 @@ providers:
     config:
       api_key: ${env.TAVILY_SEARCH_API_KEY:=}
       max_results: 3
+  # - provider_id: code-interpreter
+  #   provider_type: inline::code-interpreter
+  #   config: {}
   - provider_id: rag-runtime
     provider_type: inline::rag-runtime
     config: {}
-  - provider_id: model-context-protocol
+  - provider_id: model-context-protocol-kubernetes
     provider_type: remote::model-context-protocol
     config: {}
 metadata_store:
@@ -124,7 +127,11 @@ models:
   provider_model_id: ibm-granite/granite-embedding-125m-english
   model_type: embedding
 shields: []
-vector_dbs: []
+vector_dbs:
+- vector_db_id: my_documents
+  embedding_model: granite-embedding-125m
+  embedding_dimension: 768
+  provider_id: milvus
 datasets: []
 scoring_fns: []
 benchmarks: []
@@ -133,6 +140,10 @@ tool_groups:
   provider_id: tavily-search
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
+- toolgroup_id: mcp::openshift
+  provider_id: model-context-protocol-kubernetes
+  mcp_endpoint:
+    uri: "http://kubernetes-mcp-kubernetes-mcp-server:8080/sse"
 server:
   port: 8321
 external_providers_dir: /opt/app-root/src/.llama/providers.d
