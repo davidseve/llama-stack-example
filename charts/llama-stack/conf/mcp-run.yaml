@@ -55,6 +55,19 @@ providers:
         namespace: null
         db_path: /opt/app-root/src/.llama/distributions/rh/localfs_datasetio.db
   tool_runtime:
+  - provider_id: brave-search
+    provider_type: remote::brave-search
+    config:
+      api_key: ${env.BRAVE_SEARCH_API_KEY:=}
+      max_results: 3
+  - provider_id: tavily-search
+    provider_type: remote::tavily-search
+    config:
+      api_key: ${env.TAVILY_SEARCH_API_KEY:=}
+      max_results: 3
+  # - provider_id: code-interpreter
+  #   provider_type: inline::code-interpreter
+  #   config: {}
   - provider_id: rag-runtime
     provider_type: inline::rag-runtime
     config: {}
@@ -88,6 +101,8 @@ datasets: []
 scoring_fns: []
 benchmarks: []
 tool_groups:
+- toolgroup_id: builtin::websearch
+  provider_id: tavily-search
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
 - toolgroup_id: mcp::openshift
