@@ -1,184 +1,75 @@
-# Discounts Platform - Ejemplos y Demos
+## Installation (MaaS)
 
-## 🛍️ Resumen
+These are the installation steps using MaaS.
 
-Esta sección contiene ejemplos prácticos y demos de la plataforma **Discounts**, mostrando cómo implementar diferentes funcionalidades de búsqueda de descuentos, comparación de precios, y alertas inteligentes usando agentes de IA.
+### Pass the token via an environment variable when applying with oc
 
-## 🚀 Demos Disponibles
+To parameterize `VLLM_API_TOKEN` in `llama-stack-example/gitops/appOfApps.yaml`, use the environment variable `${VLLM_API_TOKEN}`, which you can substitute at apply time.
 
-### 1. Chatbot de Descuentos Básico
-```bash
-python tests/agent-chatbot/llama_agent_chatbot-simple.py
-```
-Un chatbot básico que puede responder preguntas sobre descuentos y encontrar ofertas simples.
+Suggested steps:
 
-### 2. Agente RAG con Herramientas MCP
-```bash
-python tests/agent-chatbot/llama_agent_chatbot-rag-mcp.py
-```
-Agente avanzado que combina:
-- **RAG**: Base de conocimiento de ofertas y estrategias de ahorro
-- **MCP Tools**: Herramientas en tiempo real para scraping de precios
-- **Análisis Predictivo**: Predicciones de cambios de precio
+1. Export your token to an environment variable.
+   ```bash
+   export VLLM_API_TOKEN="<your_token>"
+   ```
 
-### 3. Sistema Completo de Descuentos
-```bash
-python tests/agent-chatbot/llama_agent_chatbot.py
-```
-Implementación completa con todas las funcionalidades:
-- Búsqueda multi-tienda
-- Validación de cupones
-- Alertas de precio
-- Cashback tracking
-- Historial de ahorros
+2. Apply the manifest using `envsubst` and `oc apply`:
+   ```bash
+   envsubst < llama-stack-example/gitops/appOfApps.yaml | oc apply -f -
+   ```
 
-## 🛠️ Configuración
+Notes:
+- `envsubst` replaces `${VLLM_API_TOKEN}` before sending it to `oc`.
+- Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
 
-### Helm Charts
 
-#### Servicio de Inferencia
-```bash
-helm install discount-inference charts/inference/
-```
-Despliega los modelos de IA necesarios para análisis de precios y procesamiento de lenguaje natural.
+## Run the ReAct chatbot (RAG + MCP)
 
-#### Servidor MCP de Descuentos  
-```bash
-helm install discount-mcp charts/kubernetes-mcp-server/
-```
-Despliega las herramientas MCP específicas para web scraping de ofertas y APIs de tiendas.
+This section explains how to run `tests/agent-chatbot/llama_reactagent_chatbot-rag-mcp.py`. The script creates a ReAct agent using Llama Stack, enables RAG with a small example document set, and uses MCP tools (e.g., `mcp::openshift`).
 
-#### Stack Completo de Discounts
-```bash
-helm install discounts-stack charts/llama-stack/
-```
-Despliega toda la plataforma incluyendo:
-- Agentes de IA especializados
-- Base de datos vectorial
-- APIs de comparación
-- Sistema de notificaciones
+### Prerequisites
 
-### Variables de Configuración
+- Python 3.8+ and `pip`
+- An accessible Llama Stack server (`REMOTE_BASE_URL`)
+- RAG enabled on the Llama Stack server
+- OpenShift MCP toolgroup registered in Llama Stack (`mcp::openshift`)
 
-#### values-common.yaml
-```yaml
-discounts:
-  enableScrapingTools: true
-  storeApis:
-    amazon: 
-      enabled: true
-      apiKey: "${AMAZON_API_KEY}"
-    walmart:
-      enabled: true
-      apiKey: "${WALMART_API_KEY}"
-  thresholds:
-    minimumDiscount: 0.15  # 15%
-    priceDropAlert: 0.10   # 10%
-```
+### Quick start (recommended with virtualenv)
 
-## 🧪 Testing y Validación
-
-### Scripts de Validación
-```bash
-# Validación básica de funcionalidad
-./tests/run_validation.sh
-
-# Test de servicios de inferencia
-./tests/test_inference_service.sh
-
-# Validación completa de la plataforma
-python tests/validate_discounts_platform.py
-```
-
-### Tests Específicos
-
-#### 1. Test de APIs de Tiendas
-```bash
-python tests/validate_basic.py --test-stores
-```
-
-#### 2. Test de Agentes RAG
-```bash
-python tests/validate_llamastack_enhanced.py --test-rag
-```
-
-#### 3. Test de Herramientas MCP
-```bash
-python tests/validate_llamastack_enhanced.py --test-mcp
-```
-
-## 🔧 Desarrollo
-
-### Estructura del Proyecto
-```
-tests/
-├── agent-chatbot/           # Demos de chatbots
-│   ├── llama_agent_chatbot-simple.py
-│   ├── llama_agent_chatbot-rag-mcp.py
-│   └── llama_agent_chatbot.py
-├── validate_basic.py        # Tests básicos
-├── validate_llamastack_enhanced.py  # Tests avanzados
-└── requirements.txt         # Dependencias
-```
-
-### Setup para Desarrollo
 ```bash
 cd tests/agent-chatbot
-./setup.sh
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 📊 Funcionalidades Destacadas
+### Configure variables (minimal .env)
 
-### Búsqueda Inteligente de Productos
-- Procesamiento de lenguaje natural para entender consultas de productos
-- Búsqueda semántica usando embeddings
-- Ranking inteligente de resultados por ahorro potencial
+Create or edit a `.env` file in `llama-stack-example/tests/agent-chatbot` with at least these variables:
 
-### Análisis de Precios en Tiempo Real
-- Monitoreo continuo de precios en 15+ tiendas
-- Alertas automáticas de bajadas de precio
-- Predicciones basadas en histórico de precios
+```bash
+REMOTE_BASE_URL=http://localhost:8321
+INFERENCE_MODEL_ID=llama-4-scout-17b-16e-w4a16
+LLAMA_STACK_TIMEOUT=30
+SKIP_SSL_VERIFY=false
+```
 
-### Validación Automática de Cupones
-- Verificación en tiempo real de códigos promocionales
-- Base de datos actualizada de cupones válidos
-- Combinación inteligente de ofertas para maximizar ahorros
+### Run the script
 
-### Dashboard de Ahorros
-- Tracking personalizado de ahorros acumulados
-- Análisis de patrones de compra
-- Recomendaciones basadas en historial
+```bash
+python3 llama_reactagent_chatbot-rag-mcp.py
+```
 
-## 🤖 Casos de Uso
+What the script does:
+- Verifies registered MCP toolgroups and lists available tools
+- Inserts example documents into a vector DB for RAG
+- Creates a session and runs a test query, showing tool usage and agent response
 
-### Para Usuarios Finales
-- "¿Cuál es el mejor precio para iPhone 15 Pro?"
-- "Avísame cuando los AirPods bajen de $150"
-- "Encuentra cupones para Nike"
-- "¿Cuánto he ahorrado este mes?"
+To change the test query, edit the `query` variable in the `main()` function of `llama_reactagent_chatbot-rag-mcp.py`.
 
-### Para Desarrolladores
-- Integración de APIs de descuentos en aplicaciones existentes
-- Implementación de alertas de precio personalizadas
-- Desarrollo de bots de Slack/Discord para equipos
-- Automatización de procesos de compra corporativa
+### Troubleshooting
 
-## 📈 Métricas y Observabilidad
+- "No OpenShift MCP tools found": ensure the MCP server is running and registered in Llama Stack (toolgroup `mcp::openshift`).
+- "RAG tool is not available": verify RAG is enabled on the server and the client exposes `tool_runtime.rag_tool`.
+- TLS issues: set `SKIP_SSL_VERIFY=true` only in test environments with untrusted certificates.
 
-La plataforma incluye métricas integradas para monitorear:
-
-- **Ahorros generados**: Total de dinero ahorrado por usuarios
-- **Precisión de cupones**: Porcentaje de cupones válidos encontrados
-- **Latencia de búsqueda**: Tiempo de respuesta de consultas
-- **Cobertura de tiendas**: Número de tiendas monitoreadas activamente
-- **Satisfacción del usuario**: Feedback y ratings de recomendaciones
-
-## 🚀 Próximas Funcionalidades
-
-- [ ] Integración con asistentes de voz (Alexa, Google)
-- [ ] App móvil nativa con notificaciones push
-- [ ] Sistema de recompensas por uso de la plataforma
-- [ ] API pública para desarrolladores terceros
-- [ ] Integración con carteras digitales para compras automáticas

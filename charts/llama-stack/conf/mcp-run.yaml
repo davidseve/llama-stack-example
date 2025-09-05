@@ -109,7 +109,7 @@ providers:
   - provider_id: kubernetes-mcp-server
     provider_type: remote::model-context-protocol
     config:
-      url: http://kubernetes-mcp-example-kubernetes-mcp-server:8080
+      url: http://kubernetes-mcp-kubernetes-mcp-server:8000
       api_token: ""
       tls_verify: false
 metadata_store:
@@ -146,7 +146,7 @@ tool_groups:
 - toolgroup_id: mcp::openshift
   provider_id: kubernetes-mcp-server
   mcp_endpoint:
-    uri: "http://kubernetes-mcp-example-kubernetes-mcp-server:8080/sse"
+    uri: "http://kubernetes-mcp-kubernetes-mcp-server:8080/sse"
 server:
   port: 8321
 external_providers_dir: /opt/app-root/src/.llama/providers.d
