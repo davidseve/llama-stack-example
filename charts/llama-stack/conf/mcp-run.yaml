@@ -31,6 +31,17 @@ providers:
         type: sqlite
         namespace: null
         db_path: /opt/app-root/src/.llama/distributions/rh/milvus_registry.db
+  agents:
+  - provider_id: meta-reference
+    provider_type: inline::meta-reference
+    config:
+      persistence_store:
+        type: sqlite
+        namespace: null
+        db_path: /opt/app-root/src/.llama/distributions/rh/agents_store.db
+      responses_store:
+        type: sqlite
+        db_path: /opt/app-root/src/.llama/distributions/rh/responses_store.db
   datasetio:
   - provider_id: huggingface
     provider_type: remote::huggingface
