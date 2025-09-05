@@ -150,12 +150,22 @@ Always reason through problems step-by-step, use tools intelligently, and provid
             registered_toolgroups = {tg.identifier for tg in self.client.toolgroups.list()}
             print(f"🔗 Registered toolgroups: {registered_toolgroups}")
             
-            # List all tools
-            all_tools = self.client.tools.list()
-            print(f"🛠️  Total tools available: {len(all_tools)}")
+            # List MCP OpenShift tools specifically (avoid general tools.list() due to TaskGroup issues)
+            try:
+                openshift_tools = self.client.tools.list(toolgroup_id="mcp::openshift")
+                print(f"🛠️  OpenShift MCP tools available: {len(openshift_tools)}")
+            except Exception as e:
+                print(f"❌ Error listing MCP tools: {e}")
+                openshift_tools = []
             
-            # Check MCP OpenShift tools specifically
-            openshift_tools = [t for t in all_tools if t.toolgroup_id == "mcp::openshift"]
+            # Also try to list RAG tools
+            try:
+                rag_tools = self.client.tools.list(toolgroup_id="builtin::rag")
+                print(f"📚 RAG tools available: {len(rag_tools)}")
+            except Exception as e:
+                print(f"❌ Error listing RAG tools: {e}")
+                rag_tools = []
+            
             if openshift_tools:
                 print(f"✅ OpenShift MCP tools found: {len(openshift_tools)}")
                 for tool in openshift_tools:
