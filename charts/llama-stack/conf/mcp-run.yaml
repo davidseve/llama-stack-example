@@ -109,7 +109,7 @@ providers:
   - provider_id: kubernetes-mcp-server
     provider_type: remote::model-context-protocol
     config:
-      url: http://kubernetes-mcp-kubernetes-mcp-server:8080
+      url: http://kubernetes-mcp-kubernetes-mcp-server:8000
       api_token: ""
       tls_verify: false
 metadata_store:
