@@ -106,12 +106,9 @@ providers:
   - provider_id: rag-runtime
     provider_type: inline::rag-runtime
     config: {}
-  - provider_id: kubernetes-mcp-server
+  - provider_id: model-context-protocol
     provider_type: remote::model-context-protocol
-    config:
-      url: http://kubernetes-mcp-kubernetes-mcp-server:8080
-      api_token: ""
-      tls_verify: false
+    config: {}
 metadata_store:
   type: sqlite
   db_path: /opt/app-root/src/.llama/distributions/rh/registry.db
@@ -144,7 +141,7 @@ tool_groups:
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
 - toolgroup_id: mcp::openshift
-  provider_id: kubernetes-mcp-server
+  provider_id: model-context-protocol
   mcp_endpoint:
     uri: "http://kubernetes-mcp-kubernetes-mcp-server:8080/sse"
 server:
