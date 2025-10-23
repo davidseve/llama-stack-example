@@ -7,5 +7,5 @@ secret:
     VLLM_TLS_VERIFY: "false"  # Base64 encoded value
 config:
   enable: true
-  # file: conf/default-run.yaml
-  file: conf/mcp-run.yaml
+  file: conf/default-run.yaml
+  # file: conf/mcp-run.yaml
