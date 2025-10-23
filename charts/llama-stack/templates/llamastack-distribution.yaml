@@ -11,6 +11,11 @@ spec:
   replicas: {{ .Values.llamastack.replicas }}
   server:
     containerSpec:
+      #fix for v2.24
+      command:
+        - /bin/sh
+        - '-c'
+        - llama stack run /etc/llama-stack/run.yaml
       env:
         - name: INFERENCE_MODEL
           valueFrom:
@@ -46,8 +51,8 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      # name: rh-dev
-      image: {{ .Values.server.distribution.image | quote }}
+      name: rh-dev
+      # image: {{ .Values.server.distribution.image | quote }}
    {{- if .Values.config.enable }}
     userConfig:
       configMapName: {{ .Values.global.name }}-config
