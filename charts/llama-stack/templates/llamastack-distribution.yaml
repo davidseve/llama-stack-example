@@ -46,8 +46,8 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      name: rh-dev
-      # image: {{ .Values.server.distribution.image | quote }}
+      # name: rh-dev
+      image: {{ .Values.server.distribution.image | quote }}
    {{- if .Values.config.enable }}
     userConfig:
       configMapName: {{ .Values.global.name }}-config

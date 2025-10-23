@@ -1,3 +1,7 @@
+server:
+  distribution:
+    image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v2.25
+
 # Secret configuration
 secret:
   name: llama-stack-inference-model-secret
