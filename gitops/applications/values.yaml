@@ -1,0 +1,19 @@
+# Control de habilitación de aplicaciones
+applications:
+  discounts:
+    enabled: false
+  
+  inference:
+    enabled: false
+  
+  kubernetesMcp:
+    enabled: false
+  
+  llamaStack:
+    enabled: true
+
+# Configuración para llama-stack (token VLLM)
+secret:
+  data:
+    VLLM_API_TOKEN: ""
+
