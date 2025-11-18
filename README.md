@@ -15,7 +15,7 @@ Suggested steps:
 
 2. Apply the manifest using `envsubst` and `oc apply`:
    ```bash
-   envsubst < llama-stack-example/gitops/appOfApps.yaml | oc apply -f -
+   envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
 Notes:

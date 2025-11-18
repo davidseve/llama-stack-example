@@ -12,16 +12,18 @@ spec:
   server:
     containerSpec:
       #fix for v2.24
-      command:
-        - /bin/sh
-        - '-c'
-        - llama stack run /etc/llama-stack/run.yaml
+      # command:
+      #   - /bin/sh
+      #   - '-c'
+      #   - llama stack run /etc/llama-stack/run.yaml
       env:
         - name: INFERENCE_MODEL
           valueFrom:
             secretKeyRef:
               key: INFERENCE_MODEL
               name: {{ .Values.global.name }}-secret
+        - name: VLLM_MAX_TOKENS
+          value: "4096"
         - name: VLLM_URL
           valueFrom:
             secretKeyRef:
