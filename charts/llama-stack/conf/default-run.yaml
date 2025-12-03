@@ -134,6 +134,8 @@ providers:
     module: llama_stack_provider_ragas.inline
     config:
       embedding_model: ${env.EMBEDDING_MODEL:=}
+      default_max_tokens: 2048
+      default_temperature: 0.1
   - provider_id: ${env.KUBEFLOW_LLAMA_STACK_URL:+trustyai_ragas_remote}
     provider_type: remote::trustyai_ragas
     module: llama_stack_provider_ragas.remote
