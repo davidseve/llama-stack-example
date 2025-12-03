@@ -10,6 +10,6 @@ secret:
     VLLM_URL: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"         # Base64 encoded value
     VLLM_TLS_VERIFY: "false"  # Base64 encoded value
 config:
-  enable: false
+  enable: true
   file: conf/default-run.yaml
   # file: conf/mcp-run.yaml
