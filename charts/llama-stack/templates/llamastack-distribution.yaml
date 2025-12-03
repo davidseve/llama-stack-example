@@ -43,6 +43,8 @@ spec:
           value: {{ .Values.server.containerSpec.env.milvusDbPath | quote }}
         - name: FMS_ORCHESTRATOR_URL
           value: {{ .Values.server.containerSpec.env.fmsOrchestratorUrl | quote }}
+        - name: EMBEDDING_MODEL
+          value: {{ .Values.server.containerSpec.env.embeddingModel | quote }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
