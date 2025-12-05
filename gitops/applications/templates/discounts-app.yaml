@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://github.com/davidseve/argocd-example-application.git
     targetRevision: HEAD
-    path: ./app/discounts-helm 
+    path: ./apps/discounts-helm
     helm: 
       valueFiles: 
         - values.yaml        
