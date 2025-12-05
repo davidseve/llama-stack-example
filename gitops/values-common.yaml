@@ -1,3 +1,10 @@
 global:
   name: llama-stack-example
   namespace: llama-stack-example
+
+applications:
+  discounts:
+    enabled: true
+  
+  kubernetesMcp:
+    enabled: true
