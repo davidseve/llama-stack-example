@@ -28,7 +28,7 @@ Notas:
 
 ### 1. Chatbot RAG + MCP
 
-**[examples/rag-mcp-chatbot](examples/rag-mcp-chatbot/)**
+**[examples/rag-mcp-chatbot](./examples/rag-mcp-chatbot/README.md)**
 
 Chatbot interactivo que combina RAG (Retrieval Augmented Generation) con herramientas MCP (Model Context Protocol) para interactuar con clusters OpenShift/Kubernetes. Permite hacer preguntas sobre documentación indexada y ejecutar operaciones en el cluster simultáneamente.
 
@@ -39,7 +39,7 @@ cd examples/rag-mcp-chatbot
 
 ### 2. Evaluación RAG con RAGAS
 
-**[examples/rag-evaluation-ragas](examples/rag-evaluation-ragas/)**
+**[examples/rag-evaluation-ragas](./examples/rag-evaluation-ragas/README.md)**
 
 Workflow completo para evaluar sistemas RAG usando métricas RAGAS (answer_relevancy, faithfulness, context_precision, context_recall) a través del Llama Stack SDK. Incluye scripts para subir documentos, generar datasets y ejecutar evaluaciones automatizadas.
 
