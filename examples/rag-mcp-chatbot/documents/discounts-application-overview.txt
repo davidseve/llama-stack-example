@@ -1,0 +1,37 @@
+DISCOUNTS APPLICATION - OVERVIEW
+
+APPLICATION: discounts-app
+VERSION: 2.3.1
+FUNCTION: E-commerce discount management and calculation system
+
+ARCHITECTURE:
+- Microservices-based architecture with 5 main services
+- API Gateway on port 8080
+- PostgreSQL database for discount rules
+- Redis cache for calculations
+- Kubernetes deployment
+
+CORE SERVICES:
+- discount-calculator: Core calculation engine
+- campaign-manager: Manages campaigns
+- user-service: User authentication
+- product-catalog: Product info
+- analytics-service: Reporting
+
+API ENDPOINTS:
+- POST /api/v1/discounts/calculate
+- GET /api/v1/campaigns
+- POST /api/v1/codes/validate
+
+KUBERNETES RESOURCES:
+- Namespace: discounts-app
+- Deployments: 5 (one per service)
+- Services: 5 ClusterIP services
+- ConfigMaps: discount-rules, api-config
+- Secrets: db-credentials, redis-auth
+
+MONITORING:
+- Prometheus metrics on /metrics
+- Grafana dashboards available
+- Alert rules for SLA monitoring
+

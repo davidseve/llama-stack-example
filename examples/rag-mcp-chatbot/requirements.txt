@@ -1,8 +1,11 @@
 # Llama Stack Agent Chatbot Requirements
 
 # Core Llama Stack dependencies
-llama-stack-client
+llama-stack-client>=0.3.3
 llama-stack
+
+# OpenAI-compatible client (required for vector stores API in v0.3.3+)
+openai
 
 # Environment and configuration
 python-dotenv
@@ -10,18 +13,15 @@ python-dotenv
 # Terminal output formatting
 termcolor
 
-# Optional dependencies for enhanced functionality
-# Uncomment these if you have access to the respective services:
-
-# For web search capabilities
-# tavily-python
-
-# For OpenAI integration (optional)
-# openai
-
 # For enhanced HTTP requests and SSL handling
 requests
 httpx
 
 # For type hints (Python 3.5+)
 typing-extensions
+
+# Optional dependencies for enhanced functionality
+# Uncomment these if you have access to the respective services:
+
+# For web search capabilities
+# tavily-python

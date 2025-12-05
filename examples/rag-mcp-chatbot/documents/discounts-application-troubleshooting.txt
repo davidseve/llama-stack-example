@@ -1,0 +1,55 @@
+DISCOUNTS APPLICATION - TROUBLESHOOTING
+
+COMMON PROBLEMS AND SOLUTIONS:
+
+PROBLEM 1: "Discount Calculation Incorrect"
+SYMPTOMS: Users receiving wrong discount amounts
+DIAGNOSIS:
+- Check discount-calculator service logs: kubectl logs -f deployment/discount-calculator
+- Verify discount rules in database: SELECT * FROM discount_rules WHERE active = true
+- Test calculation endpoint: curl -X POST /api/v1/discounts/calculate
+SOLUTIONS:
+- Review discount rule precedence and stacking logic
+- Check for floating-point calculation errors
+- Verify product catalog prices are up to date
+- Clear Redis cache if stale data detected
+
+PROBLEM 2: "Promo Codes Not Working"
+SYMPTOMS: Users cannot apply promo codes at checkout
+DIAGNOSIS:
+- Check campaign-manager service logs
+- Verify code exists: SELECT * FROM promo_codes WHERE code = 'DISCOUNT20'
+- Check expiration dates and usage limits
+- Test validation endpoint: curl -X POST /api/v1/codes/validate
+SOLUTIONS:
+- Verify promo code is active and within date range
+- Check usage limits haven't been exceeded
+- Ensure case-sensitivity settings are correct
+- Review minimum order requirements
+
+PROBLEM 3: "Database Connection Issues"
+SYMPTOMS: Services failing to connect to PostgreSQL
+DIAGNOSIS:
+- Check database connectivity: pg_isready -h postgres-service -p 5432
+- Review connection pool metrics
+- Check service environment variables for DB credentials
+SOLUTIONS:
+- Verify PostgreSQL service is running and accessible
+- Check connection string format and credentials
+- Monitor connection pool size and adjust if needed
+- Restart services if connection pool is exhausted
+
+PROBLEM 4: "High Response Times"
+SYMPTOMS: API responses taking > 2 seconds
+SOLUTIONS:
+- Scale up discount-calculator replicas if CPU bound
+- Optimize database queries with proper indexing
+- Increase Redis cache size and TTL values
+- Implement circuit breaker pattern for external calls
+
+USEFUL COMMANDS:
+- kubectl get pods -l app=discounts-app
+- kubectl logs -f deployment/discount-calculator --tail=100
+- kubectl port-forward svc/api-gateway 8080:8080
+- redis-cli -h redis-service FLUSHDB (clear cache)
+

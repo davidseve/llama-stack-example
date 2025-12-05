@@ -1,13 +1,13 @@
 # Control de habilitación de aplicaciones
 applications:
   discounts:
-    enabled: false
+    enabled: true
   
   inference:
     enabled: false
   
   kubernetesMcp:
-    enabled: false
+    enabled: true
   
   llamaStack:
     enabled: true

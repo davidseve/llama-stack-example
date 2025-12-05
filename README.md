@@ -1,75 +1,49 @@
-## Installation (MaaS)
+## Instalación (MaaS)
 
-These are the installation steps using MaaS.
+Estos son los pasos de instalación usando MaaS.
 
-### Pass the token via an environment variable when applying with oc
+### Pasar el token mediante una variable de entorno al aplicar con oc
 
-To parameterize `VLLM_API_TOKEN` in `llama-stack-example/gitops/appOfApps.yaml`, use the environment variable `${VLLM_API_TOKEN}`, which you can substitute at apply time.
+Para parametrizar `VLLM_API_TOKEN` en `llama-stack-example/gitops/appOfApps.yaml`, usa la variable de entorno `${VLLM_API_TOKEN}`, que puedes sustituir en el momento de aplicar.
 
-Suggested steps:
+Pasos sugeridos:
 
-1. Export your token to an environment variable.
+1. Exporta tu token a una variable de entorno.
    ```bash
-   export VLLM_API_TOKEN="<your_token>"
+   export VLLM_API_TOKEN="<tu_token>"
    ```
 
-2. Apply the manifest using `envsubst` and `oc apply`:
+2. Aplica el manifiesto usando `envsubst` y `oc apply`:
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
-Notes:
-- `envsubst` replaces `${VLLM_API_TOKEN}` before sending it to `oc`.
-- Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
+Notas:
+- `envsubst` reemplaza `${VLLM_API_TOKEN}` antes de enviarlo a `oc`.
+- Asegúrate de que el proyecto/namespace correcto esté configurado en el manifiesto, o usa `-n <namespace>` con `oc apply` si es necesario.
 
+---
 
-## Run the ReAct chatbot (RAG + MCP)
+## Ejemplos
 
-This section explains how to run `tests/agent-chatbot/llama_reactagent_chatbot-rag-mcp.py`. The script creates a ReAct agent using Llama Stack, enables RAG with a small example document set, and uses MCP tools (e.g., `mcp::openshift`).
+### 1. Chatbot RAG + MCP
 
-### Prerequisites
+**[examples/rag-mcp-chatbot](examples/rag-mcp-chatbot/)**
 
-- Python 3.8+ and `pip`
-- An accessible Llama Stack server (`REMOTE_BASE_URL`)
-- RAG enabled on the Llama Stack server
-- OpenShift MCP toolgroup registered in Llama Stack (`mcp::openshift`)
-
-### Quick start (recommended with virtualenv)
+Chatbot interactivo que combina RAG (Retrieval Augmented Generation) con herramientas MCP (Model Context Protocol) para interactuar con clusters OpenShift/Kubernetes. Permite hacer preguntas sobre documentación indexada y ejecutar operaciones en el cluster simultáneamente.
 
 ```bash
-cd tests/agent-chatbot
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cd examples/rag-mcp-chatbot
+./run_example.sh
 ```
 
-### Configure variables (minimal .env)
+### 2. Evaluación RAG con RAGAS
 
-Create or edit a `.env` file in `llama-stack-example/tests/agent-chatbot` with at least these variables:
+**[examples/rag-evaluation-ragas](examples/rag-evaluation-ragas/)**
+
+Workflow completo para evaluar sistemas RAG usando métricas RAGAS (answer_relevancy, faithfulness, context_precision, context_recall) a través del Llama Stack SDK. Incluye scripts para subir documentos, generar datasets y ejecutar evaluaciones automatizadas.
 
 ```bash
-REMOTE_BASE_URL=http://localhost:8321
-INFERENCE_MODEL_ID=llama-4-scout-17b-16e-w4a16
-LLAMA_STACK_TIMEOUT=30
-SKIP_SSL_VERIFY=false
+cd examples/rag-evaluation-ragas
+./run_example.sh
 ```
-
-### Run the script
-
-```bash
-python3 llama_reactagent_chatbot-rag-mcp.py
-```
-
-What the script does:
-- Verifies registered MCP toolgroups and lists available tools
-- Inserts example documents into a vector DB for RAG
-- Creates a session and runs a test query, showing tool usage and agent response
-
-To change the test query, edit the `query` variable in the `main()` function of `llama_reactagent_chatbot-rag-mcp.py`.
-
-### Troubleshooting
-
-- "No OpenShift MCP tools found": ensure the MCP server is running and registered in Llama Stack (toolgroup `mcp::openshift`).
-- "RAG tool is not available": verify RAG is enabled on the server and the client exposes `tool_runtime.rag_tool`.
-- TLS issues: set `SKIP_SSL_VERIFY=true` only in test environments with untrusted certificates.
-

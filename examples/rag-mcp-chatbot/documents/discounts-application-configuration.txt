@@ -1,0 +1,56 @@
+DISCOUNTS APPLICATION - CONFIGURATION
+
+MAIN CONFIGURATION COMPONENTS:
+
+1. APPLICATION SETTINGS (ConfigMap: api-config)
+   - API_PORT: 8080
+   - LOG_LEVEL: INFO
+   - CACHE_TTL: 3600 (seconds)
+   - MAX_DISCOUNT_PERCENT: 50
+
+2. DATABASE CONFIGURATION (Secret: db-credentials)
+   - DB_HOST: postgres-service
+   - DB_PORT: 5432
+   - DB_NAME: discounts_db
+   - DB_USER: discounts_user
+   - DB_PASSWORD: (encrypted)
+   - DB_POOL_SIZE: 10
+
+3. REDIS CACHE CONFIGURATION (Secret: redis-auth)
+   - REDIS_HOST: redis-service
+   - REDIS_PORT: 6379
+   - REDIS_PASSWORD: (encrypted)
+   - REDIS_DB: 0
+
+4. DISCOUNT RULES FORMAT
+   Rules are stored in PostgreSQL with this structure:
+   - rule_id: UUID
+   - rule_name: string
+   - discount_type: PERCENTAGE | FIXED_AMOUNT
+   - discount_value: decimal
+   - min_order_value: decimal (optional)
+   - max_discount: decimal (optional)
+   - stackable: boolean
+   - priority: integer
+   - start_date: timestamp
+   - end_date: timestamp
+   - active: boolean
+
+5. ENVIRONMENT VARIABLES
+   Required for all services:
+   - DATABASE_URL: Connection string to PostgreSQL
+   - REDIS_URL: Connection string to Redis
+   - LOG_FORMAT: json | text
+   - METRICS_ENABLED: true | false
+
+6. HEALTH CHECK ENDPOINTS
+   - /health/live: Liveness probe
+   - /health/ready: Readiness probe
+   - /metrics: Prometheus metrics
+
+7. SCALING CONFIGURATION
+   - Min replicas: 2
+   - Max replicas: 10
+   - CPU threshold: 70%
+   - Memory threshold: 80%
+
