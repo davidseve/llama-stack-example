@@ -1,47 +1,114 @@
-## Instalación (MaaS)
+# Llama Stack Examples
 
-Estos son los pasos de instalación usando MaaS.
+Examples demonstrating Llama Stack capabilities on Red Hat OpenShift AI.
 
-### Pasar el token mediante una variable de entorno al aplicar con oc
+## Prerequisites
 
-Para parametrizar `VLLM_API_TOKEN` en `llama-stack-example/gitops/appOfApps.yaml`, usa la variable de entorno `${VLLM_API_TOKEN}`, que puedes sustituir en el momento de aplicar.
+| Component | Version | Description |
+|-----------|---------|-------------|
+| **OpenShift Container Platform** | 4.20+ | Kubernetes distribution for enterprise |
+| **Red Hat OpenShift AI** | 3.0+ | AI/ML platform with model serving capabilities |
+| **OpenShift GitOps** | - | GitOps continuous delivery (for automated deployment) |
+| **Python** | 3.11+ | Required for running the example scripts |
 
-Pasos sugeridos:
+---
 
-1. Exporta tu token a una variable de entorno.
+## Installation
+
+Choose one of the following installation options based on your infrastructure:
+
+### Option 1: Model as a Service (MaaS)
+
+Use this option when you want to consume models from an external provider (e.g., IBM watsonx, OpenAI-compatible endpoints). The LLM runs externally, and Llama Stack connects to it via API.
+
+**Advantages:**
+- No GPU resources required on your cluster
+- Quick setup
+- Lower infrastructure costs
+
+**Steps:**
+
+1. Export your MaaS configuration as environment variables:
    ```bash
-   export VLLM_API_TOKEN="<tu_token>"
+   export VLLM_API_TOKEN="<your_token>"
+   export VLLM_URL="<your_maas_endpoint_url>"
    ```
 
-2. Aplica el manifiesto usando `envsubst` y `oc apply`:
+   Example for IBM watsonx:
+   ```bash
+   export VLLM_API_TOKEN="your-api-key"
+   export VLLM_URL="https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
+   ```
+
+2. Deploy using GitOps (OpenShift GitOps):
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
-Notas:
-- `envsubst` reemplaza `${VLLM_API_TOKEN}` antes de enviarlo a `oc`.
-- Asegúrate de que el proyecto/namespace correcto esté configurado en el manifiesto, o usa `-n <namespace>` con `oc apply` si es necesario.
+**Notes:**
+- `envsubst` replaces `${VLLM_API_TOKEN}` and `${VLLM_URL}` before sending it to `oc`.
+- Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
 
 ---
 
-## Ejemplos
+### Option 2: Self-Hosted Model (vLLM)
 
-### 1. Chatbot RAG + MCP
+Use this option when you want to deploy and run the LLM model directly on your OpenShift cluster using vLLM as the inference server.
+
+**Advantages:**
+- Full control over the model and infrastructure
+- Data stays within your cluster
+- No external API dependencies
+
+**Requirements:**
+- GPU nodes available in your cluster (NVIDIA recommended)
+- Sufficient VRAM for the model (e.g., 24GB+ for 7B models)
+- NVIDIA GPU Operator installed and configured
+
+**Steps:**
+
+1. Update `gitops/llama-stack-values.yaml` to point to your local vLLM inference service:
+   ```yaml
+   secret:
+     data:
+       INFERENCE_MODEL: "your-model-name"
+       VLLM_URL: "http://vllm-inference.llama-stack.svc.cluster.local:8000/v1"
+   ```
+
+2. Deploy using GitOps (OpenShift GitOps):
+   ```bash
+   oc apply -f gitops/appOfApps.yaml
+   ```
+
+3. Wait for the vLLM inference service to be ready:
+   ```bash
+   oc get inferenceservice -n llama-stack -w
+   ```
+
+**Notes:**
+- Model download may take several minutes depending on model size and network speed.
+- The `VLLM_URL` should point to your internal vLLM service endpoint.
+
+---
+
+## Examples
+
+### 1. RAG + MCP Chatbot
 
 **[examples/rag-mcp-chatbot](./examples/rag-mcp-chatbot/README.md)**
 
-Chatbot interactivo que combina RAG (Retrieval Augmented Generation) con herramientas MCP (Model Context Protocol) para interactuar con clusters OpenShift/Kubernetes. Permite hacer preguntas sobre documentación indexada y ejecutar operaciones en el cluster simultáneamente.
+Interactive chatbot that combines RAG (Retrieval Augmented Generation) with MCP (Model Context Protocol) tools to interact with OpenShift/Kubernetes clusters. Allows asking questions about indexed documentation and executing cluster operations simultaneously.
 
 ```bash
 cd examples/rag-mcp-chatbot
 ./run_example.sh
 ```
 
-### 2. Evaluación RAG con RAGAS
+### 2. RAG Evaluation with RAGAS
 
 **[examples/rag-evaluation-ragas](./examples/rag-evaluation-ragas/README.md)**
 
-Workflow completo para evaluar sistemas RAG usando métricas RAGAS (answer_relevancy, faithfulness, context_precision, context_recall) a través del Llama Stack SDK. Incluye scripts para subir documentos, generar datasets y ejecutar evaluaciones automatizadas.
+Complete workflow to evaluate RAG systems using RAGAS metrics (answer_relevancy, faithfulness, context_precision, context_recall) through the Llama Stack SDK. Includes scripts to upload documents, generate datasets, and run automated evaluations.
 
 ```bash
 cd examples/rag-evaluation-ragas

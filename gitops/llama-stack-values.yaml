@@ -1,7 +1,3 @@
-server:
-  distribution:
-    image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v2.25
-
 # Secret configuration
 secret:
   name: llama-stack-inference-model-secret
@@ -13,3 +9,7 @@ config:
   enable: true
   # file: conf/default-run.yaml
   file: conf/mcp-run-full-3.yaml
+
+# server:
+#   distribution:
+#     image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v2.25
