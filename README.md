@@ -95,7 +95,7 @@ Use this option when you want to deploy and run the LLM model directly on your O
 
 ### 1. RAG + MCP Chatbot
 
-**[examples/rag-mcp-chatbot](./examples/rag-mcp-chatbot/README.md)**
+**[rag-mcp-chatbot](./examples/rag-mcp-chatbot/README.md)**
 
 Interactive chatbot that combines RAG (Retrieval Augmented Generation) with MCP (Model Context Protocol) tools to interact with OpenShift/Kubernetes clusters. Allows asking questions about indexed documentation and executing cluster operations simultaneously.
 
@@ -106,7 +106,7 @@ cd examples/rag-mcp-chatbot
 
 ### 2. RAG Evaluation with RAGAS
 
-**[examples/rag-evaluation-ragas](./examples/rag-evaluation-ragas/README.md)**
+**[rag-evaluation-ragas](./examples/rag-evaluation-ragas/README.md)**
 
 Complete workflow to evaluate RAG systems using RAGAS metrics (answer_relevancy, faithfulness, context_precision, context_recall) through the Llama Stack SDK. Includes scripts to upload documents, generate datasets, and run automated evaluations.
 
