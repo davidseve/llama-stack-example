@@ -1,0 +1,81 @@
+DISCOUNTS APPLICATION - DEPLOYMENT TROUBLESHOOTING
+
+CONFIGMAP CONFIGURATION ERROR
+=============================
+
+If you encounter an error when deploying the discounts application related to 
+missing ConfigMap, follow these steps to resolve it.
+
+SYMPTOM:
+--------
+The deployment fails or pods are in CrashLoopBackOff/Error state with messages like:
+- "configmap 'discounts-configmap-env-base' not found"
+- Pod unable to start due to missing environment configuration
+
+ROOT CAUSE:
+-----------
+The ConfigMap 'discounts-configmap-env-base' is not included in the Helm chart 
+and must be created manually or through a separate GitOps process before 
+deploying the application.
+
+SOLUTION:
+---------
+
+1. CREATE THE CONFIGMAP
+
+   Create a ConfigMap with the required environment variables:
+
+   kubectl apply -f - <<EOF
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: discounts-configmap-env-base
+     labels:
+       deployment: discounts
+   data:
+     application.version: "v1.0.1"
+     application.colour: "black"
+     quarkus.log.level: "INFO"
+     application.mode: "online"
+   EOF
+
+2. UPDATE THE DEPLOYMENT (if not already configured)
+
+   If your deployment doesn't reference the ConfigMap, add the following to the 
+   container spec in your deployment.yaml:
+
+   spec:
+     containers:
+       - name: discounts
+         envFrom:
+         - configMapRef:
+             name: discounts-configmap-env-base
+
+3. VERIFY THE CONFIGURATION
+
+   Check that the ConfigMap exists:
+   kubectl get configmap discounts-configmap-env-base -o yaml
+
+   Restart the deployment to pick up the changes:
+   kubectl rollout restart deployment/discounts
+
+CONFIGMAP PARAMETERS REFERENCE:
+-------------------------------
+
+| Parameter            | Description                    | Default Value |
+|---------------------|--------------------------------|---------------|
+| application.version | Application version identifier | v1.0.1        |
+| application.colour  | UI theme color                 | black         |
+| quarkus.log.level   | Logging level                  | INFO          |
+| application.mode    | Operation mode (online/offline)| online        |
+
+ADDITIONAL NOTES:
+-----------------
+- The ConfigMap is intentionally managed separately to allow environment-specific 
+  configuration without modifying the Helm chart.
+- For production environments, consider using sealed-secrets or external secret 
+  management for sensitive configuration values.
+- The ConfigMap should be created in the same namespace where the application 
+  is deployed.
+
+
