@@ -20,6 +20,7 @@ spec:
       containers:
         - name: discounts
           image: quay.io/dseveria/discounts-config-mandatory:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
