@@ -34,12 +34,6 @@ Use this option when you want to consume models from an external provider (e.g.,
    export VLLM_URL="<your_maas_endpoint_url>"
    ```
 
-   Example for IBM watsonx:
-   ```bash
-   export VLLM_API_TOKEN="your-api-key"
-   export VLLM_URL="https://llama-4-scout-17b-16e-w4a16-maas-apicast.com:443/v1"
-   ```
-
 2. Deploy using GitOps (OpenShift GitOps):
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
