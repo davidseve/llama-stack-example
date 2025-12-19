@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-RAGAS Evaluation Script using Llama Stack SDK (Inline Mode)
+RAGAS Evaluation Script using Llama Stack SDK (Remote Mode)
 
 This script evaluates RAG systems using RAGAS metrics through Llama Stack's
-evaluation API. It uses the inline provider mode as recommended by Red Hat 
-OpenShift AI Self-Managed 3.0 documentation.
+evaluation API. It uses the REMOTE provider mode which runs evaluations as
+Kubeflow/Data Science Pipelines jobs on OpenShift AI.
 
 Based on:
 - Red Hat OpenShift AI Self-Managed 3.0 - Evaluating RAG systems with RAGAS
-- Llama Stack Provider RAGAS - basic_demo.ipynb (inline mode)
+- Llama Stack Provider RAGAS - remote mode with DSPA integration
 """
 
 import json
@@ -174,7 +174,7 @@ def register_benchmark(
         "benchmark_id": benchmark_id,
         "dataset_id": dataset_id,
         "scoring_functions": metrics,
-        "provider_id": "trustyai_ragas_inline"
+        "provider_id": "trustyai_ragas_remote"
     }
     
     try:
@@ -201,7 +201,11 @@ def run_evaluation(
     poll_interval: int = 5,
 ) -> Any:
     """
-    Run RAGAS evaluation using inline provider with evaluate_rows API.
+    Run RAGAS evaluation using remote provider (DSPA/Kubeflow Pipelines).
+    
+    The evaluation is submitted as a pipeline job to Data Science Pipelines
+    Application (DSPA) on OpenShift AI. The job runs asynchronously and
+    this function polls for completion.
     
     Args:
         client: LlamaStackClient instance
@@ -254,10 +258,10 @@ def run_evaluation(
     }
     
     # 4. Build extra_body for RAGAS-specific parameters
-    # Note: provider is "trustyai_ragas_inline" based on error message
+    # Note: provider is "trustyai_ragas_remote" for DSPA pipeline execution
     # embedding_model is required by the server
     extra_body = {
-        "provider_id": "trustyai_ragas_inline",
+        "provider_id": "trustyai_ragas_remote",
         "judge_model": model_id,
         "embedding_model": embedding_model_id or "granite-embedding-125m",
     }
@@ -447,7 +451,7 @@ def evaluate_ragas(
     poll_interval: int = 5,
 ) -> Dict[str, Any]:
     """
-    Complete RAGAS evaluation workflow using Llama Stack inline provider.
+    Complete RAGAS evaluation workflow using Llama Stack remote provider (DSPA).
     
     Args:
         llama_stack_url: Base URL of Llama Stack server
@@ -628,7 +632,7 @@ def evaluate_ragas(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Evaluate RAG systems with RAGAS metrics using Llama Stack (inline mode)",
+        description="Evaluate RAG systems with RAGAS metrics using Llama Stack (remote/DSPA mode)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Available RAGAS Metrics:
@@ -660,8 +664,9 @@ Examples:
     --dataset output/millbrook_ragas_dataset.json \\
     --output output/millbrook_ragas_results.json
 
-Note: This script uses the INLINE provider mode, which runs RAGAS evaluation
-locally within the Llama Stack server (not on a remote RAGAS service).
+Note: This script uses the REMOTE provider mode, which runs RAGAS evaluation
+as a Kubeflow/Data Science Pipeline job on OpenShift AI (DSPA).
+The evaluation job runs asynchronously and results are retrieved when complete.
         """
     )
     
@@ -738,7 +743,7 @@ locally within the Llama Stack server (not on a remote RAGAS service).
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     print("=" * 70)
-    print("RAGAS EVALUATION WITH LLAMA STACK (INLINE MODE)")
+    print("RAGAS EVALUATION WITH LLAMA STACK (REMOTE/DSPA MODE)")
     print("=" * 70)
     print(f"Server:     {args.url}")
     print(f"Model:      {args.model_id}")

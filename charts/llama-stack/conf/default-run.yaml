@@ -192,6 +192,7 @@ providers:
         llama_stack_url: {{ .Values.providers.kubeflow.llamaStackUrl }}
         base_image: {{ .Values.providers.kubeflow.baseImage }}
         pipelines_api_token: ${env.KUBEFLOW_PIPELINES_TOKEN:=}
+        ssl_verify: {{ .Values.providers.kubeflow.sslVerify | default true }}
 {{- end }}
   datasetio:
   - provider_id: huggingface

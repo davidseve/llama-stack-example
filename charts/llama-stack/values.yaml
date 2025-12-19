@@ -186,6 +186,7 @@ providers:
     pipelinesEndpoint: ""
     namespace: ""
     baseImage: ""
+    sslVerify: true  # Set to false if using self-signed certificates
 
   # Telemetry configuration
   telemetry:

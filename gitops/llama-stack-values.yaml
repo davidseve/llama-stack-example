@@ -29,6 +29,7 @@ providers:
     pipelinesEndpoint: "https://ds-pipeline-dspa-data-science-project.apps.ocp.sandbox5246.opentlc.com"
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
+    sslVerify: false  # Disable SSL verification for self-signed certificates
 
 # MCP Server endpoints
 mcpServers:
