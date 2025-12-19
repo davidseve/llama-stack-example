@@ -14,15 +14,35 @@ project:
 route:
   enable: true
 
-# Secret configuration
-secret:
-  name: llama-stack-inference-model-secret
-  data:
-    INFERENCE_MODEL: ""  # Base64 encoded value
-    VLLM_URL: ""         # Base64 encoded value
-    VLLM_TLS_VERIFY: ""  # Base64 encoded value
-    VLLM_API_TOKEN: ""   # Base64 encoded value
+# ConfigMap configuration
+config:
+  enable: true
+  file: conf/default-run.yaml
 
+# Secret configuration - Only sensitive values (API keys, tokens, passwords)
+# vLLM tokens are defined per-model in providers.vllm[].apiTokenSecret
+secret:
+  name: llama-stack-secret
+  data:
+    # AWS/Bedrock
+    AWS_ACCESS_KEY_ID: ""
+    AWS_SECRET_ACCESS_KEY: ""
+    AWS_SESSION_TOKEN: ""
+    # WatsonX
+    WATSONX_API_KEY: ""
+    # Azure
+    AZURE_API_KEY: ""
+    # OpenAI
+    OPENAI_API_KEY: ""
+    # Milvus
+    MILVUS_TOKEN: ""
+    # FAISS KVStore
+    FAISS_KVSTORE_PASSWORD: ""
+    # Tool runtime
+    BRAVE_SEARCH_API_KEY: ""
+    TAVILY_SEARCH_API_KEY: ""
+    # Kubeflow
+    KUBEFLOW_PIPELINES_TOKEN: ""
 
 # LlamaStackDistribution configuration
 llamastack:
@@ -40,62 +60,155 @@ server:
       requests:
         cpu: 250m
         memory: 500Mi
-    # Environment variables from secrets
-    env:
-      inferenceModel:
-        secretName: llama-stack-inference-model-secret
-        key: INFERENCE_MODEL
-      vllmUrl:
-        secretName: llama-stack-inference-model-secret
-        key: VLLM_URL
-      vllmTlsVerify:
-        secretName: llama-stack-inference-model-secret
-        key: VLLM_TLS_VERIFY
-      # vllmApiToken:
-      #   secretName: llama-stack-inference-model-secret
-      #   key: VLLM_API_TOKEN
-      milvusDbPath: /tmp/milvus.db
-      fmsOrchestratorUrl: http://localhost
-      embeddingModel: granite-embedding-125m
 
   # Distribution configuration
-  distribution:
-    image: quay.io/opendatahub/llama-stack:odh
+  # distribution:
+  #   image: quay.io/opendatahub/llama-stack:odh
 
   # Storage configuration
   storage:
     size: 5Gi
 
-# Application configuration values
-appConfig:
-  # Inference configuration
-  inference:
-    llama3b:
-      url: "http://llama3b-service:8000/v1"
-      model: "meta-llama/Llama-3.2-3B-Instruct"
-      token: "fake"
-    
-  # Storage configuration
-  storage:
-    sqliteStoreDir: "~/.llama/distributions/remote-vllm"
-    milvusDbPath: "/tmp/milvus.db"
-  
-  # API Keys (these should typically come from secrets)
-  apiKeys:
-    openai: ""
-    braveSearch: ""
-    tavilySearch: ""
-  
+# Provider configurations (non-sensitive values)
+providers:
+  # Sentence Transformers (local embedding model)
+  sentenceTransformers:
+    enabled: true
+    modelId: "granite-embedding-125m"
+    providerModelId: "ibm-granite/granite-embedding-125m-english"
+    embeddingDimension: 768
+
+  # vLLM configuration for LLMs (map) - key becomes provider_id as "{key}-vllm-inference"
+  vllm: {}
+    # Example:
+    # llama-8b:                                    # provider_id: llama-8b-vllm-inference
+    #   modelId: "meta-llama/Llama-3.1-8B-Instruct"
+    #   url: "http://vllm-server:8000/v1"
+    #   maxTokens: "4096"
+    #   tlsVerify: "true"
+    #   apiTokenSecret: "VLLM_API_TOKEN"           # Key in secret.data
+
+  # vLLM configuration for remote embeddings (map) - key becomes provider_id as "{key}-vllm-embedding"
+  vllmEmbedding: {}
+    # Example:
+    # granite-embedding:                           # provider_id: granite-embedding-vllm-embedding
+    #   modelId: "ibm-granite/granite-embedding-125m-english"
+    #   url: "http://vllm-embedding-server:8000/v1"
+    #   embeddingDimension: 768
+    #   tlsVerify: "true"
+    #   apiTokenSecret: "VLLM_EMBEDDING_API_TOKEN" # Key in secret.data
+
+  # AWS/Bedrock configuration
+  bedrock:
+    enabled: false
+    region: ""
+    profile: ""
+    maxAttempts: ""
+    retryMode: ""
+    connectTimeout: "60"
+    readTimeout: "60"
+    sessionTtl: "3600"
+
+  # WatsonX configuration
+  watsonx:
+    enabled: false
+    baseUrl: "https://us-south.ml.cloud.ibm.com"
+    projectId: ""
+
+  # Azure configuration
+  azure:
+    enabled: false
+    apiBase: ""
+    apiVersion: ""
+    apiType: ""
+
+  # VertexAI configuration
+  vertexai:
+    enabled: false
+    project: ""
+    location: "us-central1"
+
+  # OpenAI configuration
+  openai:
+    enabled: false
+    baseUrl: "https://api.openai.com/v1"
+
+  # Milvus remote configuration - connects to external Milvus in 'milvus' namespace
+  milvus:
+    enabled: true
+    endpoint: "http://milvus.milvus.svc.cluster.local:19530"
+    secure: ""
+    consistencyLevel: ""
+    caPemPath: ""
+    clientPemPath: ""
+    clientKeyPath: ""
+
+  # FAISS configuration
+  faiss:
+    enabled: false
+    kvstore:
+      type: "sqlite"
+      namespace: ""
+      dbPath: ""
+      host: ""
+      port: ""
+      db: ""
+      user: ""
+      sslMode: ""
+      caCertPath: ""
+      tableName: ""
+      collectionName: ""
+
+  # FMS Safety configuration
+  fms:
+    orchestratorUrl: ""
+    sslCertPath: ""
+
+  # TrustyAI LMEval configuration
+  trustyai:
+    lmeval:
+      useK8s: "true"
+      baseUrl: ""  # e.g., "http://vllm-server:8000/v1"
+
+  # RAGAS configuration
+  ragas:
+    embeddingModel: ""
+    defaultMaxTokens: "2048"
+    defaultTemperature: "0.1"
+
+  # Kubeflow configuration
+  kubeflow:
+    enabled: false
+    llamaStackUrl: ""
+    resultsS3Prefix: ""
+    s3CredentialsSecretName: ""
+    pipelinesEndpoint: ""
+    namespace: ""
+    baseImage: ""
+
   # Telemetry configuration
   telemetry:
-    serviceName: "llama-stack"
-    sinks: "console, sqlite"
-    otelTraceEndpoint: ""
-    sqliteDbPath: "~/.llama/distributions/remote-vllm/trace_store.db"
-  
-  # MCP endpoints
-  mcp:
-    openshift:
-      uri: "http://ocp-mcp-server:8000/sse"
-    slack:
-      uri: "http://slack-mcp-server:80/sse"
+    serviceName: "​"
+    sinks: "console"
+    otlpEndpoint: ""
+
+  # Tool runtime - Brave Search
+  braveSearch:
+    maxResults: 3
+
+  # Tool runtime - Tavily Search
+  tavilySearch:
+    maxResults: 3
+
+# Vector DBs configuration (map)
+# Note: embeddingModel MUST be one of the configured embedding models from:
+#   - providers.sentenceTransformers.modelId (if enabled)
+#   - providers.vllmEmbedding.{key}.modelId (any vLLM embedding model)
+# Helm will fail with an error if the model is not found.
+vectorDbs: {}
+  # Example:
+  # my-collection:
+  #   embeddingModel: "granite-embedding-125m"  # Must match a configured embedding model
+  #   embeddingDimension: 768
+  #   providerId: "milvus-remote"               # vector_io provider (e.g., milvus, milvus-remote, faiss)
+  #   providerVectorDbId: "real_collection_name"  # Optional: actual collection name in the vector DB

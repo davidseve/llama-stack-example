@@ -1,5 +1,12 @@
 {{- if .Values.applications.milvus.enabled }}
 ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: milvus
+  labels:
+    kubernetes.io/metadata.name: milvus
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -10,7 +17,7 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: openshift-gitops
+    namespace: milvus
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
@@ -23,5 +30,7 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
 {{- end }}
 

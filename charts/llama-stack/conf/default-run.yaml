@@ -13,52 +13,74 @@ apis:
 - files
 providers:
   inference:
-  - provider_id: ${env.VLLM_URL:+vllm-inference}
+{{- range $name, $vllm := .Values.providers.vllm }}
+  - provider_id: {{ $name }}-vllm-inference
     provider_type: remote::vllm
     config:
-      url: ${env.VLLM_URL:=}
-      max_tokens: ${env.VLLM_MAX_TOKENS:=4096}
-      api_token: ${env.VLLM_API_TOKEN:=fake}
-      tls_verify: ${env.VLLM_TLS_VERIFY:=true}
-  - provider_id: ${env.AWS_ACCESS_KEY_ID:+bedrock}
+      url: {{ $vllm.url }}
+      max_tokens: {{ $vllm.maxTokens | default "4096" }}
+      api_token: ${env.{{ $vllm.apiTokenSecret | default "VLLM_API_TOKEN" }}:=fake}
+      tls_verify: {{ $vllm.tlsVerify | default "true" }}
+{{- end }}
+{{- range $name, $embed := .Values.providers.vllmEmbedding }}
+  - provider_id: {{ $name }}-vllm-embedding
+    provider_type: remote::vllm
+    config:
+      url: {{ $embed.url }}
+      api_token: ${env.{{ $embed.apiTokenSecret | default "VLLM_API_TOKEN" }}:=fake}
+      tls_verify: {{ $embed.tlsVerify | default "true" }}
+{{- end }}
+{{- if .Values.providers.bedrock.enabled }}
+  - provider_id: bedrock
     provider_type: remote::bedrock
     config:
       aws_access_key_id: ${env.AWS_ACCESS_KEY_ID:=}
       aws_secret_access_key: ${env.AWS_SECRET_ACCESS_KEY:=}
       aws_session_token: ${env.AWS_SESSION_TOKEN:=}
-      region_name: ${env.AWS_DEFAULT_REGION:=}
-      profile_name: ${env.AWS_PROFILE:=}
-      total_max_attempts: ${env.AWS_MAX_ATTEMPTS:=}
-      retry_mode: ${env.AWS_RETRY_MODE:=}
-      connect_timeout: ${env.AWS_CONNECT_TIMEOUT:=60}
-      read_timeout: ${env.AWS_READ_TIMEOUT:=60}
-      session_ttl: ${env.AWS_SESSION_TTL:=3600}
+      region_name: {{ .Values.providers.bedrock.region }}
+      profile_name: {{ .Values.providers.bedrock.profile }}
+      total_max_attempts: {{ .Values.providers.bedrock.maxAttempts }}
+      retry_mode: {{ .Values.providers.bedrock.retryMode }}
+      connect_timeout: {{ .Values.providers.bedrock.connectTimeout }}
+      read_timeout: {{ .Values.providers.bedrock.readTimeout }}
+      session_ttl: {{ .Values.providers.bedrock.sessionTtl }}
+{{- end }}
+{{- if .Values.providers.sentenceTransformers.enabled }}
   - provider_id: sentence-transformers
     provider_type: inline::sentence-transformers
     config: {}
-  - provider_id: ${env.WATSONX_API_KEY:+watsonx}
+{{- end }}
+{{- if .Values.providers.watsonx.enabled }}
+  - provider_id: watsonx
     provider_type: remote::watsonx
     config:
-      url: ${env.WATSONX_BASE_URL:=https://us-south.ml.cloud.ibm.com}
+      url: {{ .Values.providers.watsonx.baseUrl }}
       api_key: ${env.WATSONX_API_KEY:=}
-      project_id: ${env.WATSONX_PROJECT_ID:=}
-  - provider_id: ${env.AZURE_API_KEY:+azure}
+      project_id: {{ .Values.providers.watsonx.projectId }}
+{{- end }}
+{{- if .Values.providers.azure.enabled }}
+  - provider_id: azure
     provider_type: remote::azure
     config:
       api_key: ${env.AZURE_API_KEY:=}
-      api_base: ${env.AZURE_API_BASE:=}
-      api_version: ${env.AZURE_API_VERSION:=}
-      api_type: ${env.AZURE_API_TYPE:=}
-  - provider_id: ${env.VERTEX_AI_PROJECT:+vertexai}
+      api_base: {{ .Values.providers.azure.apiBase }}
+      api_version: {{ .Values.providers.azure.apiVersion }}
+      api_type: {{ .Values.providers.azure.apiType }}
+{{- end }}
+{{- if .Values.providers.vertexai.enabled }}
+  - provider_id: vertexai
     provider_type: remote::vertexai
     config:
-      project: ${env.VERTEX_AI_PROJECT:=}
-      location: ${env.VERTEX_AI_LOCATION:=us-central1}
-  - provider_id: ${env.OPENAI_API_KEY:+openai}
+      project: {{ .Values.providers.vertexai.project }}
+      location: {{ .Values.providers.vertexai.location }}
+{{- end }}
+{{- if .Values.providers.openai.enabled }}
+  - provider_id: openai
     provider_type: remote::openai
     config:
       api_key: ${env.OPENAI_API_KEY:=}
-      base_url: ${env.OPENAI_BASE_URL:=https://api.openai.com/v1}
+      base_url: {{ .Values.providers.openai.baseUrl }}
+{{- end }}
   vector_io:
   - provider_id: milvus
     provider_type: inline::milvus
@@ -68,48 +90,66 @@ providers:
         type: sqlite
         namespace: null
         db_path: /opt/app-root/src/.llama/distributions/rh/milvus_registry.db
-  - provider_id: ${env.ENABLE_FAISS:+faiss}
+{{- if .Values.providers.faiss.enabled }}
+  - provider_id: faiss
     provider_type: inline::faiss
     config:
       kvstore:
-        type: ${env.FAISS_KVSTORE_TYPE:=sqlite}
-        namespace: ${env.FAISS_KVSTORE_NAMESPACE:=}
+        type: {{ .Values.providers.faiss.kvstore.type }}
+        namespace: {{ .Values.providers.faiss.kvstore.namespace }}
         # SQLite backend (type=sqlite)
-        db_path: ${env.FAISS_KVSTORE_DB_PATH:=}
+        db_path: {{ .Values.providers.faiss.kvstore.dbPath }}
         # Redis, PostgreSQL, MongoDB backends (type=redis|postgres|mongodb)
-        host: ${env.FAISS_KVSTORE_HOST:=}
-        port: ${env.FAISS_KVSTORE_PORT:=}
+        host: {{ .Values.providers.faiss.kvstore.host }}
+        port: {{ .Values.providers.faiss.kvstore.port }}
         # PostgreSQL, MongoDB backends (type=postgres|mongodb)
-        db: ${env.FAISS_KVSTORE_DB:=}
-        user: ${env.FAISS_KVSTORE_USER:=}
+        db: {{ .Values.providers.faiss.kvstore.db }}
+        user: {{ .Values.providers.faiss.kvstore.user }}
         password: ${env.FAISS_KVSTORE_PASSWORD:=}
         # PostgreSQL backend only (type=postgres)
-        ssl_mode: ${env.FAISS_KVSTORE_SSL_MODE:=}
-        ca_cert_path: ${env.FAISS_KVSTORE_CA_CERT_PATH:=}
-        table_name: ${env.FAISS_KVSTORE_TABLE_NAME:=}
+        ssl_mode: {{ .Values.providers.faiss.kvstore.sslMode }}
+        ca_cert_path: {{ .Values.providers.faiss.kvstore.caCertPath }}
+        table_name: {{ .Values.providers.faiss.kvstore.tableName }}
         # MongoDB backend only (type=mongodb)
-        collection_name: ${env.FAISS_KVSTORE_COLLECTION_NAME:=}
-  - provider_id: ${env.MILVUS_ENDPOINT:+milvus-remote}
+        collection_name: {{ .Values.providers.faiss.kvstore.collectionName }}
+{{- end }}
+{{- if .Values.providers.milvus.enabled }}
+  - provider_id: milvus-remote
     provider_type: remote::milvus
     config:
-      uri: ${env.MILVUS_ENDPOINT:=}
+      uri: {{ .Values.providers.milvus.endpoint }}
       token: ${env.MILVUS_TOKEN:=}
-      secure: ${env.MILVUS_SECURE:=}
-      consistency_level: ${env.MILVUS_CONSISTENCY_LEVEL:=}
-      ca_pem_path: ${env.MILVUS_CA_PEM_PATH:=}
-      client_pem_path: ${env.MILVUS_CLIENT_PEM_PATH:=}
-      client_key_path: ${env.MILVUS_CLIENT_KEY_PATH:=}
+      {{- if .Values.providers.milvus.secure }}
+      secure: {{ .Values.providers.milvus.secure }}
+      {{- end }}
+      {{- if .Values.providers.milvus.consistencyLevel }}
+      consistency_level: {{ .Values.providers.milvus.consistencyLevel }}
+      {{- end }}
+      {{- if .Values.providers.milvus.caPemPath }}
+      ca_pem_path: {{ .Values.providers.milvus.caPemPath }}
+      {{- end }}
+      {{- if .Values.providers.milvus.clientPemPath }}
+      client_pem_path: {{ .Values.providers.milvus.clientPemPath }}
+      {{- end }}
+      {{- if .Values.providers.milvus.clientKeyPath }}
+      client_key_path: {{ .Values.providers.milvus.clientKeyPath }}
+      {{- end }}
       kvstore:
         type: sqlite
         namespace: null
         db_path: /opt/app-root/src/.llama/distributions/rh/milvus_remote_registry.db
+{{- end }}
   safety:
     - provider_id: trustyai_fms
       provider_type: remote::trustyai_fms
       module: llama_stack_provider_trustyai_fms==0.2.2
       config:
-        orchestrator_url: ${env.FMS_ORCHESTRATOR_URL:=}
-        ssl_cert_path: ${env.FMS_SSL_CERT_PATH:=}
+        {{- if .Values.providers.fms.orchestratorUrl }}
+        orchestrator_url: {{ .Values.providers.fms.orchestratorUrl }}
+        {{- end }}
+        {{- if .Values.providers.fms.sslCertPath }}
+        ssl_cert_path: {{ .Values.providers.fms.sslCertPath }}
+        {{- end }}
         shields: {}
   agents:
   - provider_id: meta-reference
@@ -127,28 +167,32 @@ providers:
     provider_type: remote::trustyai_lmeval
     module: llama_stack_provider_lmeval==0.2.4
     config:
-        use_k8s: ${env.TRUSTYAI_LMEVAL_USE_K8S:=true}
-        base_url: ${env.VLLM_URL:=http://localhost:8000/v1}
-  - provider_id: ${env.EMBEDDING_MODEL:+trustyai_ragas_inline}
+        use_k8s: {{ .Values.providers.trustyai.lmeval.useK8s }}
+        base_url: {{ .Values.providers.trustyai.lmeval.baseUrl | default "http://localhost:8000/v1" }}
+{{- if .Values.providers.ragas.embeddingModel }}
+  - provider_id: trustyai_ragas_inline
     provider_type: inline::trustyai_ragas
     module: llama_stack_provider_ragas.inline
     config:
-      embedding_model: ${env.EMBEDDING_MODEL:=}
-      default_max_tokens: 2048
-      default_temperature: 0.1
-  - provider_id: ${env.KUBEFLOW_LLAMA_STACK_URL:+trustyai_ragas_remote}
+      embedding_model: {{ .Values.providers.ragas.embeddingModel }}
+      default_max_tokens: {{ .Values.providers.ragas.defaultMaxTokens | default "2048" }}
+      default_temperature: {{ .Values.providers.ragas.defaultTemperature | default "0.1" }}
+{{- end }}
+{{- if .Values.providers.kubeflow.enabled }}
+  - provider_id: trustyai_ragas_remote
     provider_type: remote::trustyai_ragas
     module: llama_stack_provider_ragas.remote
     config:
-      embedding_model: ${env.EMBEDDING_MODEL:=}
+      embedding_model: {{ .Values.providers.ragas.embeddingModel }}
       kubeflow_config:
-        results_s3_prefix: ${env.KUBEFLOW_RESULTS_S3_PREFIX:=}
-        s3_credentials_secret_name: ${env.KUBEFLOW_S3_CREDENTIALS_SECRET_NAME:=}
-        pipelines_endpoint: ${env.KUBEFLOW_PIPELINES_ENDPOINT:=}
-        namespace: ${env.KUBEFLOW_NAMESPACE:=}
-        llama_stack_url: ${env.KUBEFLOW_LLAMA_STACK_URL:=}
-        base_image: ${env.KUBEFLOW_BASE_IMAGE:=}
+        results_s3_prefix: {{ .Values.providers.kubeflow.resultsS3Prefix }}
+        s3_credentials_secret_name: {{ .Values.providers.kubeflow.s3CredentialsSecretName }}
+        pipelines_endpoint: {{ .Values.providers.kubeflow.pipelinesEndpoint }}
+        namespace: {{ .Values.providers.kubeflow.namespace }}
+        llama_stack_url: {{ .Values.providers.kubeflow.llamaStackUrl }}
+        base_image: {{ .Values.providers.kubeflow.baseImage }}
         pipelines_api_token: ${env.KUBEFLOW_PIPELINES_TOKEN:=}
+{{- end }}
   datasetio:
   - provider_id: huggingface
     provider_type: remote::huggingface
@@ -171,28 +215,32 @@ providers:
   - provider_id: llm-as-judge
     provider_type: inline::llm-as-judge
     config: {}
+{{- if .Values.providers.openai.enabled }}
   - provider_id: braintrust
     provider_type: inline::braintrust
     config:
       openai_api_key: ${env.OPENAI_API_KEY:=}
+{{- end }}
   telemetry:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config:
-      service_name: "${env.OTEL_SERVICE_NAME:=\u200B}"
-      sinks: ${env.TELEMETRY_SINKS:=console}
-      otel_exporter_otlp_endpoint: ${env.OTEL_EXPORTER_OTLP_ENDPOINT:=}
+      service_name: "{{ .Values.providers.telemetry.serviceName }}"
+      sinks: {{ .Values.providers.telemetry.sinks }}
+      {{- if .Values.providers.telemetry.otlpEndpoint }}
+      otel_exporter_otlp_endpoint: {{ .Values.providers.telemetry.otlpEndpoint }}
+      {{- end }}
   tool_runtime:
   - provider_id: brave-search
     provider_type: remote::brave-search
     config:
       api_key: ${env.BRAVE_SEARCH_API_KEY:=}
-      max_results: 3
+      max_results: {{ .Values.providers.braveSearch.maxResults }}
   - provider_id: tavily-search
     provider_type: remote::tavily-search
     config:
       api_key: ${env.TAVILY_SEARCH_API_KEY:=}
-      max_results: 3
+      max_results: {{ .Values.providers.tavilySearch.maxResults }}
   - provider_id: rag-runtime
     provider_type: inline::rag-runtime
     config: {}
@@ -214,18 +262,38 @@ inference_store:
   type: sqlite
   db_path: /opt/app-root/src/.llama/distributions/rh/inference_store.db
 models:
+{{- range $name, $vllm := .Values.providers.vllm }}
 - metadata: {}
-  model_id: ${env.INFERENCE_MODEL}
-  provider_id: vllm-inference
+  model_id: {{ $vllm.modelId }}
+  provider_id: {{ $name }}-vllm-inference
   model_type: llm
+{{- end }}
+{{- if .Values.providers.sentenceTransformers.enabled }}
 - metadata:
-    embedding_dimension: 768
-  model_id: granite-embedding-125m
+    embedding_dimension: {{ .Values.providers.sentenceTransformers.embeddingDimension }}
+  model_id: {{ .Values.providers.sentenceTransformers.modelId }}
   provider_id: sentence-transformers
-  provider_model_id: ibm-granite/granite-embedding-125m-english
+  provider_model_id: {{ .Values.providers.sentenceTransformers.providerModelId }}
   model_type: embedding
+{{- end }}
+{{- range $name, $embed := .Values.providers.vllmEmbedding }}
+- metadata:
+    embedding_dimension: {{ $embed.embeddingDimension }}
+  model_id: {{ $embed.modelId }}
+  provider_id: {{ $name }}-vllm-embedding
+  model_type: embedding
+{{- end }}
 shields: []
-vector_dbs: []
+vector_dbs:
+{{- range $name, $vdb := .Values.vectorDbs }}
+- vector_db_id: {{ $name }}
+  embedding_model: {{ $vdb.embeddingModel }}
+  embedding_dimension: {{ $vdb.embeddingDimension }}
+  provider_id: {{ $vdb.providerId }}
+  {{- if $vdb.providerVectorDbId }}
+  provider_vector_db_id: {{ $vdb.providerVectorDbId }}
+  {{- end }}
+{{- end }}
 datasets: []
 scoring_fns: []
 benchmarks: []
@@ -235,4 +303,4 @@ tool_groups:
 - toolgroup_id: builtin::rag
   provider_id: rag-runtime
 server:
-  port: 8321
+  port: {{ .Values.server.containerSpec.port }}

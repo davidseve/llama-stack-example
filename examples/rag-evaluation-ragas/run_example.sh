@@ -89,6 +89,9 @@ else
         --url "$LLAMA_STACK_URL" \
         --documents-dir "$DOCUMENTS_DIR" \
         --embedding-model "$EMBEDDING_MODEL" \
+        --max-chunk-chars 2000 \
+        --chunk-size 2000 \
+        --chunk-overlap 200 \
         $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") \
         2>&1)
     

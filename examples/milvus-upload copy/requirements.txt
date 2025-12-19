@@ -1,8 +1,0 @@
-# Milvus Upload Module Requirements
-
-# OpenAI-compatible client (required for vector stores API)
-openai>=1.0.0
-
-# HTTP client with SSL support
-httpx>=0.25.0
-

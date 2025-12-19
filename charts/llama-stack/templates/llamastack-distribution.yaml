@@ -11,40 +11,118 @@ spec:
   replicas: {{ .Values.llamastack.replicas }}
   server:
     containerSpec:
-      #fix for v2.24
-      # command:
-      #   - /bin/sh
-      #   - '-c'
-      #   - llama stack run /etc/llama-stack/run.yaml
       env:
-        - name: INFERENCE_MODEL
+        # ==================== SECRETS (sensitive values from K8s Secret) ====================
+        # vLLM API Tokens (dynamically generated from providers.vllm)
+        {{- range $name, $vllm := .Values.providers.vllm }}
+        {{- $tokenKey := $vllm.apiTokenSecret | default "VLLM_API_TOKEN" }}
+        {{- $tokenValue := index $.Values.secret.data $tokenKey }}
+        {{- if $tokenValue }}
+        - name: {{ $tokenKey }}
           valueFrom:
             secretKeyRef:
-              key: INFERENCE_MODEL
-              name: {{ .Values.global.name }}-secret
-        - name: VLLM_MAX_TOKENS
-          value: "4096"
-        - name: VLLM_URL
+              key: {{ $tokenKey }}
+              name: {{ $.Values.global.name }}-secret
+        {{- end }}
+        {{- end }}
+        # vLLM Embedding API Tokens (dynamically generated from providers.vllmEmbedding)
+        {{- range $name, $embed := .Values.providers.vllmEmbedding }}
+        {{- $tokenKey := $embed.apiTokenSecret | default "VLLM_API_TOKEN" }}
+        {{- $tokenValue := index $.Values.secret.data $tokenKey }}
+        {{- if $tokenValue }}
+        - name: {{ $tokenKey }}
           valueFrom:
             secretKeyRef:
-              key: VLLM_URL
-              name: {{ .Values.global.name }}-secret
-        - name: VLLM_TLS_VERIFY
+              key: {{ $tokenKey }}
+              name: {{ $.Values.global.name }}-secret
+        {{- end }}
+        {{- end }}
+        # AWS/Bedrock credentials
+        {{- if .Values.secret.data.AWS_ACCESS_KEY_ID }}
+        - name: AWS_ACCESS_KEY_ID
           valueFrom:
             secretKeyRef:
-              key: VLLM_TLS_VERIFY
+              key: AWS_ACCESS_KEY_ID
               name: {{ .Values.global.name }}-secret
-        - name: VLLM_API_TOKEN
+        {{- end }}
+        {{- if .Values.secret.data.AWS_SECRET_ACCESS_KEY }}
+        - name: AWS_SECRET_ACCESS_KEY
           valueFrom:
             secretKeyRef:
-              key: VLLM_API_TOKEN
+              key: AWS_SECRET_ACCESS_KEY
               name: {{ .Values.global.name }}-secret
-        - name: MILVUS_DB_PATH
-          value: {{ .Values.server.containerSpec.env.milvusDbPath | quote }}
-        - name: FMS_ORCHESTRATOR_URL
-          value: {{ .Values.server.containerSpec.env.fmsOrchestratorUrl | quote }}
-        - name: EMBEDDING_MODEL
-          value: {{ .Values.server.containerSpec.env.embeddingModel | quote }}
+        {{- end }}
+        {{- if .Values.secret.data.AWS_SESSION_TOKEN }}
+        - name: AWS_SESSION_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: AWS_SESSION_TOKEN
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # WatsonX API Key
+        {{- if .Values.secret.data.WATSONX_API_KEY }}
+        - name: WATSONX_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: WATSONX_API_KEY
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # Azure API Key
+        {{- if .Values.secret.data.AZURE_API_KEY }}
+        - name: AZURE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: AZURE_API_KEY
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # OpenAI API Key
+        {{- if .Values.secret.data.OPENAI_API_KEY }}
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: OPENAI_API_KEY
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # Milvus Token
+        {{- if .Values.secret.data.MILVUS_TOKEN }}
+        - name: MILVUS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: MILVUS_TOKEN
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # FAISS KVStore Password
+        {{- if .Values.secret.data.FAISS_KVSTORE_PASSWORD }}
+        - name: FAISS_KVSTORE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: FAISS_KVSTORE_PASSWORD
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # Brave Search API Key
+        {{- if .Values.secret.data.BRAVE_SEARCH_API_KEY }}
+        - name: BRAVE_SEARCH_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: BRAVE_SEARCH_API_KEY
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # Tavily Search API Key
+        {{- if .Values.secret.data.TAVILY_SEARCH_API_KEY }}
+        - name: TAVILY_SEARCH_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: TAVILY_SEARCH_API_KEY
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # Kubeflow Pipelines Token
+        {{- if .Values.secret.data.KUBEFLOW_PIPELINES_TOKEN }}
+        - name: KUBEFLOW_PIPELINES_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: KUBEFLOW_PIPELINES_TOKEN
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
@@ -56,7 +134,6 @@ spec:
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
       name: rh-dev
-      # image: {{ .Values.server.distribution.image | quote }}
    {{- if .Values.config.enable }}
     userConfig:
       configMapName: {{ .Values.global.name }}-config
