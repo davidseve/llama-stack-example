@@ -4,9 +4,12 @@
 name: dspa
 namespace: data-science-project
 
-# Route configuration - exposes DSPA API with valid cluster certificates
-# This avoids SSL issues with self-signed internal certificates
+# Route configuration - NOT needed when using internal service URL with SSL bypass
 route:
+  enabled: false
+
+# NetworkPolicy to allow cross-namespace traffic from llama-stack
+networkPolicy:
   enabled: true
 
 apiServer:

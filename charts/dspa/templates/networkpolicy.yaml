@@ -1,5 +1,7 @@
-{{- if .Values.route.enabled }}
-# NetworkPolicy to allow traffic from llama-stack namespace to DSPA
+{{- if .Values.networkPolicy.enabled }}
+# NetworkPolicy to allow cross-namespace traffic from llama-stack to DSPA
+# Required because llama-stack runs in a different namespace (llama-stack-example)
+# and needs to access the DSPA API on ports 8888/8887
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
