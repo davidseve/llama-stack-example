@@ -23,7 +23,7 @@ spec:
       values: |
         secret:
           data:
-            VLLM_API_TOKEN: {{ .Values.secret.data.LLAMA_4_SCOUT_API_TOKEN | default "" | quote }}
+            LLAMA_4_SCOUT_API_TOKEN: {{.Values.secret.data.LLAMA_4_SCOUT_API_TOKEN}}
       
   syncPolicy:
     automated:

@@ -18,7 +18,7 @@ spec:
       values: |
         secret:
           data:
-            VLLM_API_TOKEN: ${VLLM_API_TOKEN}
+            LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}
   syncPolicy:
     automated:
       prune: true

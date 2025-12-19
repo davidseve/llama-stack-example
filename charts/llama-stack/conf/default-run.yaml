@@ -308,10 +308,8 @@ tool_groups:
 {{- range $name, $mcp := .Values.mcpServers }}
 - toolgroup_id: mcp::{{ $name }}
   provider_id: model-context-protocol
-  args:
-    mcp:
-      endpoint:
-        uri: {{ $mcp.uri }}
+  mcp_endpoint:
+    uri: {{ $mcp.uri }}
 {{- end }}
 server:
   port: {{ .Values.server.containerSpec.port }}

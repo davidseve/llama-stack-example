@@ -18,8 +18,5 @@ applications:
   milvus:
     enabled: true
 
-# Configuración para llama-stack (token VLLM)
-secret:
-  data:
-    VLLM_API_TOKEN: ""
+
 
