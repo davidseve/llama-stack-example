@@ -6,6 +6,7 @@ metadata:
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: "10"
 spec:
   destination:
     namespace: openshift-gitops

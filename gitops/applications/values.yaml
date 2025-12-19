@@ -1,5 +1,8 @@
 # Control de habilitación de aplicaciones
 applications:
+  rhoai:
+    enabled: true
+
   discounts:
     enabled: true
   

@@ -22,6 +22,16 @@ EMBEDDING_DIMENSIONS = {
     "all-MiniLM-L6-v2": 384,
 }
 
+# Milvus provider modes
+MILVUS_MODE_INLINE = "inline"
+MILVUS_MODE_REMOTE = "remote"
+
+# Default provider IDs for each mode (as configured in Llama Stack)
+MILVUS_PROVIDER_IDS = {
+    MILVUS_MODE_INLINE: "milvus",      # provider_type: inline::milvus
+    MILVUS_MODE_REMOTE: "milvus-remote",  # provider_type: remote::milvus
+}
+
 
 @dataclass
 class MilvusUploadConfig:
@@ -31,7 +41,9 @@ class MilvusUploadConfig:
     embedding_model: str = field(default_factory=lambda: os.getenv("EMBEDDING_MODEL", "granite-embedding-125m"))
     embedding_dimension: Optional[int] = None  # Auto-detect if None
     vector_store_name: Optional[str] = None  # Auto-generate if None
-    provider_id: str = "inline-milvus"
+    # Milvus mode: "inline" (embedded/local) or "remote" (external Milvus server)
+    milvus_mode: str = field(default_factory=lambda: os.getenv("MILVUS_MODE", MILVUS_MODE_INLINE))
+    provider_id: Optional[str] = None  # Auto-set based on milvus_mode if None
     verify_ssl: bool = False
     timeout: int = 300
     verbose: bool = True
@@ -40,6 +52,14 @@ class MilvusUploadConfig:
         # Auto-detect embedding dimension if not provided
         if self.embedding_dimension is None:
             self.embedding_dimension = EMBEDDING_DIMENSIONS.get(self.embedding_model, 768)
+        
+        # Validate milvus_mode
+        if self.milvus_mode not in (MILVUS_MODE_INLINE, MILVUS_MODE_REMOTE):
+            raise ValueError(f"Invalid milvus_mode '{self.milvus_mode}'. Use '{MILVUS_MODE_INLINE}' or '{MILVUS_MODE_REMOTE}'")
+        
+        # Auto-set provider_id based on milvus_mode if not explicitly provided
+        if self.provider_id is None:
+            self.provider_id = MILVUS_PROVIDER_IDS[self.milvus_mode]
 
 
 def upload_documents_to_milvus(config: MilvusUploadConfig) -> str:

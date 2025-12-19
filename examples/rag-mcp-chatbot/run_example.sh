@@ -79,6 +79,7 @@ else
     echo "======================================================================"
     echo "📌 Vector Store ID: $VECTOR_STORE_ID"
     echo "⏭️  Skipping document upload"
+    export VECTOR_STORE_ID
     echo ""
 fi
 

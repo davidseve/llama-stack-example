@@ -1,0 +1,13 @@
+apiVersion: v2
+name: rhoai
+description: A Helm chart for Red Hat OpenShift AI (RHOAI) operator and DataScienceCluster
+type: application
+version: 0.1.0
+appVersion: "3.0.0"
+keywords:
+  - rhoai
+  - openshift-ai
+  - ai
+  - ml
+  - operators
+

@@ -1,0 +1,39 @@
+{{- if .Values.datasciencecluster.enabled }}
+apiVersion: datasciencecluster.opendatahub.io/v2
+kind: DataScienceCluster
+metadata:
+  name: {{ .Values.datasciencecluster.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  components:
+    aipipelines:
+      argoWorkflowsControllers:
+        managementState: {{ .Values.datasciencecluster.components.aipipelines.argoWorkflowsControllers.managementState }}
+      managementState: {{ .Values.datasciencecluster.components.aipipelines.managementState }}
+    dashboard:
+      managementState: {{ .Values.datasciencecluster.components.dashboard.managementState }}
+    feastoperator:
+      managementState: {{ .Values.datasciencecluster.components.feastoperator.managementState }}
+    kserve:
+      managementState: {{ .Values.datasciencecluster.components.kserve.managementState }}
+    kueue:
+      defaultClusterQueueName: {{ .Values.datasciencecluster.components.kueue.defaultClusterQueueName }}
+      defaultLocalQueueName: {{ .Values.datasciencecluster.components.kueue.defaultLocalQueueName }}
+      managementState: {{ .Values.datasciencecluster.components.kueue.managementState }}
+    llamastackoperator:
+      managementState: {{ .Values.datasciencecluster.components.llamastackoperator.managementState }}
+    modelregistry:
+      managementState: {{ .Values.datasciencecluster.components.modelregistry.managementState }}
+      registriesNamespace: {{ .Values.datasciencecluster.components.modelregistry.registriesNamespace }}
+    ray:
+      managementState: {{ .Values.datasciencecluster.components.ray.managementState }}
+    trainingoperator:
+      managementState: {{ .Values.datasciencecluster.components.trainingoperator.managementState }}
+    trustyai:
+      managementState: {{ .Values.datasciencecluster.components.trustyai.managementState }}
+    workbenches:
+      managementState: {{ .Values.datasciencecluster.components.workbenches.managementState }}
+      workbenchNamespace: {{ .Values.datasciencecluster.components.workbenches.workbenchNamespace }}
+{{- end }}

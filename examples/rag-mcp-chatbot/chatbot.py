@@ -35,10 +35,15 @@ class LlamaStackChatbot:
         
         print(f"📋 Tools configured: {len(self.tools)}")
         
-        self.instructions = """You are a DevOps specialist. Use tools to answer questions.
+        self.instructions = """You are a DevOps/Kubernetes specialist. Use the available tools to diagnose issues.
 
-Always use both tools when troubleshooting: search docs first, then check cluster.
-"""
+When troubleshooting:
+1. Call pods_list with namespace parameter to check pod status
+2. Call pods_log for any pod in CrashLoopBackOff or Error state
+3. Search documentation for solutions
+
+Execute ALL necessary tools before providing your final answer. Do not just describe what tools to call - actually call them."""
+
     
     def _setup_client(self):
         """Setup LlamaStackClient"""
@@ -115,6 +120,7 @@ Always use both tools when troubleshooting: search docs first, then check cluste
                 instructions=self.instructions,
                 tools=self.tools if self.tools else None,
                 include=["file_search_call.results"],
+                max_infer_iters=10,  # Allow multiple tool iterations
             )
             
             # Process and display results
@@ -163,7 +169,7 @@ def main():
     chatbot = LlamaStackChatbot()
     
     query = os.getenv("TEST_QUERY", 
-        "list the pods in the openshift-gitops namespace and tell me about the discounts application troubleshooting")
+        "Why discounts application is not working in openshift-gitops namespace?")
     
     print(f"\n📝 Query: {query}")
     chatbot.chat(query)
