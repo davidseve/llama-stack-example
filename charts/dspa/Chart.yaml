@@ -1,0 +1,13 @@
+apiVersion: v2
+name: dspa
+description: A Helm chart for DataSciencePipelinesApplication
+type: application
+version: 0.1.0
+appVersion: "3.0"
+keywords:
+  - data-science-pipelines
+  - rhoai
+  - openshift-ai
+maintainers:
+  - name: dseveria
+

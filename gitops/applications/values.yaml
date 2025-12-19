@@ -20,3 +20,6 @@ applications:
 
   minio:
     enabled: true
+
+  dspa:
+    enabled: true

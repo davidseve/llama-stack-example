@@ -1,0 +1,48 @@
+apiVersion: datasciencepipelinesapplications.opendatahub.io/v1alpha1
+kind: DataSciencePipelinesApplication
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  apiServer:
+    applyTektonCustomResource: {{ .Values.apiServer.applyTektonCustomResource }}
+    archiveLogs: {{ .Values.apiServer.archiveLogs }}
+    autoUpdatePipelineDefaultVersion: {{ .Values.apiServer.autoUpdatePipelineDefaultVersion }}
+    collectMetrics: {{ .Values.apiServer.collectMetrics }}
+    dbConfigConMaxLifetimeSec: {{ .Values.apiServer.dbConfigConMaxLifetimeSec }}
+    deploy: {{ .Values.apiServer.deploy }}
+    enableOauth: {{ .Values.apiServer.enableOauth }}
+    enableSamplePipeline: {{ .Values.apiServer.enableSamplePipeline }}
+    injectDefaultScript: {{ .Values.apiServer.injectDefaultScript }}
+    stripEOF: {{ .Values.apiServer.stripEOF }}
+    terminateStatus: {{ .Values.apiServer.terminateStatus }}
+    trackArtifacts: {{ .Values.apiServer.trackArtifacts }}
+  database:
+    disableHealthCheck: {{ .Values.database.disableHealthCheck }}
+    mariaDB:
+      deploy: {{ .Values.database.mariaDB.deploy }}
+      pipelineDBName: {{ .Values.database.mariaDB.pipelineDBName }}
+      pvcSize: {{ .Values.database.mariaDB.pvcSize }}
+      username: {{ .Values.database.mariaDB.username }}
+  objectStorage:
+    disableHealthCheck: {{ .Values.objectStorage.disableHealthCheck }}
+    externalStorage:
+      basePath: {{ .Values.objectStorage.externalStorage.basePath | quote }}
+      bucket: {{ .Values.objectStorage.externalStorage.bucket }}
+      host: {{ .Values.objectStorage.externalStorage.host }}
+      port: {{ .Values.objectStorage.externalStorage.port | quote }}
+      region: {{ .Values.objectStorage.externalStorage.region }}
+      s3CredentialsSecret:
+        accessKey: {{ .Values.objectStorage.externalStorage.s3CredentialsSecret.accessKey }}
+        secretKey: {{ .Values.objectStorage.externalStorage.s3CredentialsSecret.secretKey }}
+        secretName: {{ .Values.objectStorage.externalStorage.s3CredentialsSecret.secretName }}
+      scheme: {{ .Values.objectStorage.externalStorage.scheme }}
+  persistenceAgent:
+    deploy: {{ .Values.persistenceAgent.deploy }}
+    numWorkers: {{ .Values.persistenceAgent.numWorkers }}
+  scheduledWorkflow:
+    cronScheduleTimezone: {{ .Values.scheduledWorkflow.cronScheduleTimezone }}
+    deploy: {{ .Values.scheduledWorkflow.deploy }}
+

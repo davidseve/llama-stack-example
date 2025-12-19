@@ -1,0 +1,36 @@
+{{- if .Values.applications.dspa.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dspa
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: data-science-project
+  source:
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    path: charts/dspa
+    helm: 
+      valueFiles: 
+        - values.yaml        
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+{{- end }}
+

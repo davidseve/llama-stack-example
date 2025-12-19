@@ -1,0 +1,51 @@
+# DataSciencePipelinesApplication configuration
+# This chart should be deployed AFTER the RHOAI operator and DataScienceCluster
+
+name: dspa
+namespace: data-science-project
+
+apiServer:
+  applyTektonCustomResource: true
+  archiveLogs: false
+  autoUpdatePipelineDefaultVersion: true
+  collectMetrics: true
+  dbConfigConMaxLifetimeSec: 120
+  deploy: true
+  enableOauth: true
+  enableSamplePipeline: false
+  injectDefaultScript: true
+  stripEOF: true
+  terminateStatus: Cancelled
+  trackArtifacts: true
+
+database:
+  disableHealthCheck: false
+  mariaDB:
+    deploy: true
+    pipelineDBName: mlpipeline
+    pvcSize: 10Gi
+    username: mlpipeline
+
+objectStorage:
+  disableHealthCheck: false
+  # Use external MinIO (from charts/minio)
+  externalStorage:
+    basePath: ""
+    bucket: mlpipeline
+    host: minio.data-science-project.svc.cluster.local
+    port: "9000"
+    region: us-east-1
+    s3CredentialsSecret:
+      accessKey: AWS_ACCESS_KEY_ID
+      secretKey: AWS_SECRET_ACCESS_KEY
+      secretName: minio-credentials
+    scheme: http
+
+persistenceAgent:
+  deploy: true
+  numWorkers: 2
+
+scheduledWorkflow:
+  cronScheduleTimezone: UTC
+  deploy: true
+
