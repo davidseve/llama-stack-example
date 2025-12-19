@@ -4,11 +4,8 @@
 name: dspa
 namespace: data-science-project
 
-# Route configuration - NOT needed when using internal service URL with SSL bypass
-route:
-  enabled: false
-
 # NetworkPolicy to allow cross-namespace traffic from llama-stack
+# Required because llama-stack runs in a different namespace
 networkPolicy:
   enabled: true
 
