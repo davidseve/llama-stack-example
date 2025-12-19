@@ -26,7 +26,7 @@ providers:
     llamaStackUrl: "http://llama-stack-example.llama-stack-example.svc.cluster.local:8321"
     resultsS3Prefix: "ragas-results"
     s3CredentialsSecretName: "minio-credentials"
-    pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
+    pipelinesEndpoint: "https://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
     sslVerify: false  # Disable SSL verification for self-signed certificates
