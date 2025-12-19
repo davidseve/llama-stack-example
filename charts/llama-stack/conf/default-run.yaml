@@ -285,6 +285,7 @@ models:
 {{- end }}
 shields: []
 vector_dbs:
+{{- if .Values.vectorDbs }}
 {{- range $name, $vdb := .Values.vectorDbs }}
 - vector_db_id: {{ $name }}
   embedding_model: {{ $vdb.embeddingModel }}
@@ -293,6 +294,8 @@ vector_dbs:
   {{- if $vdb.providerVectorDbId }}
   provider_vector_db_id: {{ $vdb.providerVectorDbId }}
   {{- end }}
+{{- end }}
+{{- else }} []
 {{- end }}
 datasets: []
 scoring_fns: []
