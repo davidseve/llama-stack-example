@@ -125,7 +125,7 @@ spec:
         {{- end }}
         # Disable SSL verification for Kubeflow/DSPA connections (self-signed certs)
         {{- if .Values.providers.kubeflow.enabled }}
-        {{- if not (.Values.providers.kubeflow.sslVerify | default true) }}
+        {{- if eq (.Values.providers.kubeflow.sslVerify | toString) "false" }}
         - name: REQUESTS_CA_BUNDLE
           value: ""
         - name: CURL_CA_BUNDLE
