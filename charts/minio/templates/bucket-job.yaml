@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "minio.fullname" . }}-create-bucket
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-7"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: quay.io/minio/mc:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for MinIO to be ready
+              until mc alias set myminio http://{{ include "minio.fullname" . }}:{{ .Values.minio.service.apiPort }} $MINIO_ACCESS_KEY $MINIO_SECRET_KEY; do
+                echo "Waiting for MinIO..."
+                sleep 5
+              done
+              
+              # Create bucket if it doesn't exist
+              mc mb --ignore-existing myminio/{{ .Values.minio.defaultBucket }}
+              echo "Bucket {{ .Values.minio.defaultBucket }} is ready"
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.accessKeyName }}
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.credentials.secretName }}
+                  key: {{ .Values.credentials.secretKeyName }}
+

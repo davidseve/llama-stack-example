@@ -1,0 +1,26 @@
+{{- if .Values.minio.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "minio.fullname" . }}-console
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-7"
+spec:
+  {{- if .Values.minio.route.host }}
+  host: {{ .Values.minio.route.host }}
+  {{- end }}
+  port:
+    targetPort: console
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: {{ include "minio.fullname" . }}
+    weight: 100
+  wildcardPolicy: None
+{{- end }}
+

@@ -1,0 +1,50 @@
+# Default values for MinIO
+# Used by DataSciencePipelines for artifact storage
+
+# Namespace where MinIO will be deployed
+namespace: data-science-project
+
+# MinIO configuration
+minio:
+  name: minio
+  image: quay.io/minio/minio:RELEASE.2024-01-01T00-00-00Z
+  replicas: 1
+  
+  # Storage configuration
+  storage:
+    size: 20Gi
+    storageClassName: ""  # Leave empty to use default storage class
+  
+  # Resource limits
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  
+  # Service configuration
+  service:
+    apiPort: 9000
+    consolePort: 9001
+  
+  # Route configuration (OpenShift)
+  route:
+    enabled: false
+    host: ""  # Leave empty for auto-generated host
+  
+  # Bucket to create on startup
+  defaultBucket: mlpipeline
+
+# Credentials - should be overridden in production
+credentials:
+  # Name of the secret to create
+  secretName: minio-credentials
+  # Access credentials
+  accessKey: minio
+  secretKey: minio123
+  # Key names in the secret (used by DSPA)
+  accessKeyName: AWS_ACCESS_KEY_ID
+  secretKeyName: AWS_SECRET_ACCESS_KEY
+
