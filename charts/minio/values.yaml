@@ -7,7 +7,7 @@ namespace: data-science-project
 # MinIO configuration
 minio:
   name: minio
-  image: quay.io/minio/minio:RELEASE.2024-01-01T00-00-00Z
+  image: quay.io/minio/minio:latest
   replicas: 1
   
   # Storage configuration

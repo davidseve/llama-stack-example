@@ -3,7 +3,7 @@ name: minio
 description: A Helm chart for deploying MinIO object storage for Data Science Pipelines
 type: application
 version: 0.1.0
-appVersion: "RELEASE.2024-01-01T00-00-00Z"
+appVersion: "latest"
 keywords:
   - minio
   - object-storage
