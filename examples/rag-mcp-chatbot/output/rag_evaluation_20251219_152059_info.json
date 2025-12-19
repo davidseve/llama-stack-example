@@ -1,0 +1,11 @@
+{
+  "vector_store_id": "vs_5e26e491-deee-432b-9da1-f2336f465896",
+  "store_name": "rag_evaluation_20251219_152059",
+  "documents_count": 4,
+  "chunks_count": 6,
+  "chunk_size": 2000,
+  "chunk_overlap": 200,
+  "embedding_model": "granite-embedding-125m",
+  "embedding_dimension": 768,
+  "timestamp": "2025-12-19T15:21:05.529953"
+}
