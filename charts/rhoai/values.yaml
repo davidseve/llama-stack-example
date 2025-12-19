@@ -45,7 +45,7 @@ datasciencecluster:
 
 # DataSciencePipelinesApplication configuration
 datasciencepipelines:
-  enabled: false
+  enabled: true
   name: dspa
   namespace: data-science-project
   apiServer:
