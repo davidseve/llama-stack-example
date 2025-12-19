@@ -7,18 +7,18 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   apiServer:
-    applyTektonCustomResource: {{ .Values.apiServer.applyTektonCustomResource }}
-    archiveLogs: {{ .Values.apiServer.archiveLogs }}
-    autoUpdatePipelineDefaultVersion: {{ .Values.apiServer.autoUpdatePipelineDefaultVersion }}
-    collectMetrics: {{ .Values.apiServer.collectMetrics }}
-    dbConfigConMaxLifetimeSec: {{ .Values.apiServer.dbConfigConMaxLifetimeSec }}
+    applyTektonCustomResource: true
+    archiveLogs: false
+    autoUpdatePipelineDefaultVersion: true
+    collectMetrics: true
+    dbConfigConMaxLifetimeSec: 120
     deploy: {{ .Values.apiServer.deploy }}
     enableOauth: {{ .Values.apiServer.enableOauth }}
     enableSamplePipeline: {{ .Values.apiServer.enableSamplePipeline }}
-    injectDefaultScript: {{ .Values.apiServer.injectDefaultScript }}
-    stripEOF: {{ .Values.apiServer.stripEOF }}
-    terminateStatus: {{ .Values.apiServer.terminateStatus }}
-    trackArtifacts: {{ .Values.apiServer.trackArtifacts }}
+    injectDefaultScript: true
+    stripEOF: true
+    terminateStatus: Cancelled
+    trackArtifacts: true
   database:
     disableHealthCheck: {{ .Values.database.disableHealthCheck }}
     mariaDB:
