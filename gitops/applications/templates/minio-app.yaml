@@ -1,0 +1,36 @@
+{{- if .Values.applications.minio.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-science-project
+  labels:
+    kubernetes.io/metadata.name: data-science-project
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: data-science-project
+  source:
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    path: charts/minio
+    helm: 
+      valueFiles: 
+        - values.yaml        
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+

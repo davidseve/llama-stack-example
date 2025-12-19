@@ -18,5 +18,5 @@ applications:
   milvus:
     enabled: true
 
-
-
+  minio:
+    enabled: true
