@@ -76,9 +76,11 @@ spec:
             - |
               set -e
               
+              NAMESPACE="{{ .Release.Namespace }}"
+              
               echo "Waiting for Service CA injection..."
               for i in {1..30}; do
-                if oc get configmap {{ .Values.global.name }}-service-ca -o jsonpath='{.data.service-ca\.crt}' 2>/dev/null | grep -q "BEGIN CERTIFICATE"; then
+                if oc get configmap {{ .Values.global.name }}-service-ca -n $NAMESPACE -o jsonpath='{.data.service-ca\.crt}' 2>/dev/null | grep -q "BEGIN CERTIFICATE"; then
                   echo "Service CA found"
                   break
                 fi
@@ -87,10 +89,10 @@ spec:
               done
               
               echo "Getting system CA bundle..."
-              SYSTEM_CA=$(oc get configmap odh-trusted-ca-bundle -o jsonpath='{.data.ca-bundle\.crt}' 2>/dev/null || echo "")
+              SYSTEM_CA=$(oc get configmap odh-trusted-ca-bundle -n $NAMESPACE -o jsonpath='{.data.ca-bundle\.crt}' 2>/dev/null || echo "")
               
               echo "Getting Service CA..."
-              SERVICE_CA=$(oc get configmap {{ .Values.global.name }}-service-ca -o jsonpath='{.data.service-ca\.crt}')
+              SERVICE_CA=$(oc get configmap {{ .Values.global.name }}-service-ca -n $NAMESPACE -o jsonpath='{.data.service-ca\.crt}')
               
               # Check if Service CA is already included
               if echo "$SYSTEM_CA" | grep -q "openshift-service-serving-signer"; then
@@ -99,22 +101,22 @@ spec:
               fi
               
               echo "Creating combined CA bundle..."
-              cat > /tmp/combined-ca.crt << 'SYSTEM_EOF'
-              $SYSTEM_CA
-              SYSTEM_EOF
+              echo "$SYSTEM_CA" > /tmp/combined-ca.crt
               echo "$SERVICE_CA" >> /tmp/combined-ca.crt
+              echo "$SERVICE_CA" > /tmp/service-ca.crt
               
               echo "Updating odh-trusted-ca-bundle ConfigMap..."
               oc create configmap odh-trusted-ca-bundle \
                 --from-file=ca-bundle.crt=/tmp/combined-ca.crt \
-                --from-file=odh-ca-bundle.crt=<(echo "$SERVICE_CA") \
-                --dry-run=client -o yaml | oc apply -f -
+                --from-file=odh-ca-bundle.crt=/tmp/service-ca.crt \
+                -n $NAMESPACE \
+                --dry-run=client -o yaml | oc apply -n $NAMESPACE -f -
               
               echo "CA bundle updated successfully"
               
               # Trigger pod restart by patching the deployment
               echo "Restarting llama-stack pods..."
-              oc rollout restart deployment/{{ .Values.global.name }} || true
+              oc rollout restart deployment/{{ .Values.global.name }} -n $NAMESPACE || true
               
               echo "Done!"
 {{- end }}
