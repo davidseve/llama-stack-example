@@ -1,0 +1,73 @@
+{{- if and .Values.providers.kubeflow.enabled .Values.providers.kubeflow.mountServiceCA }}
+# ConfigMap that will be automatically populated with the OpenShift service CA
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.name }}-service-ca
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+  labels:
+    {{- include "llama-stack.labels" . | nindent 4 }}
+data: {}
+---
+# Job to create a combined CA bundle (service CA + system CA)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.global.name }}-create-ca-bundle
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    {{- include "llama-stack.labels" . | nindent 4 }}
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-ca-bundle
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for the service CA to be injected
+              while [ ! -s /service-ca/service-ca.crt ]; do
+                echo "Waiting for service CA injection..."
+                sleep 2
+              done
+              
+              # Combine system CA and service CA
+              cat /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem > /combined-ca/combined-ca-bundle.crt
+              cat /service-ca/service-ca.crt >> /combined-ca/combined-ca-bundle.crt
+              
+              echo "Combined CA bundle created successfully"
+          volumeMounts:
+            - name: service-ca
+              mountPath: /service-ca
+              readOnly: true
+            - name: combined-ca
+              mountPath: /combined-ca
+      volumes:
+        - name: service-ca
+          configMap:
+            name: {{ .Values.global.name }}-service-ca
+        - name: combined-ca
+          configMap:
+            name: {{ .Values.global.name }}-combined-ca
+---
+# Empty ConfigMap that the Job will populate
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.name }}-combined-ca
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "llama-stack.labels" . | nindent 4 }}
+data:
+  combined-ca-bundle.crt: ""
+{{- end }}
+

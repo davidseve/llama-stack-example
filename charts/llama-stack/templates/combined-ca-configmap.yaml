@@ -1,0 +1,16 @@
+{{- if .Values.providers.kubeflow.enabled }}
+# Combined CA bundle that includes both system CAs and OpenShift Service CA
+# This is needed because DSPA uses service-signed certificates
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.global.name }}-combined-ca
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # This annotation tells OpenShift to inject the service CA into this ConfigMap
+    service.beta.openshift.io/inject-cabundle: "true"
+  labels:
+    {{- include "llama-stack.labels" . | nindent 4 }}
+data: {}
+{{- end }}
+
