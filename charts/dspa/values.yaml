@@ -11,7 +11,7 @@ apiServer:
   collectMetrics: true
   dbConfigConMaxLifetimeSec: 120
   deploy: true
-  enableOauth: true
+  enableOauth: false  # Disabled for internal service-to-service access from llama-stack
   enableSamplePipeline: false
   injectDefaultScript: true
   stripEOF: true
