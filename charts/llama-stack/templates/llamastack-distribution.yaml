@@ -123,20 +123,8 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
-        # SSL configuration for Kubeflow Pipelines
-        {{- if .Values.providers.kubeflow.enabled }}
-        {{- if eq (.Values.providers.kubeflow.sslVerify | toString) "false" }}
-        # Disable SSL verification globally (workaround for llama_stack_provider_ragas not respecting ssl_verify config)
-        - name: PYTHONHTTPSVERIFY
-          value: "0"
-        - name: REQUESTS_CA_BUNDLE
-          value: ""
-        - name: CURL_CA_BUNDLE
-          value: ""
-        - name: SSL_CERT_FILE
-          value: ""
-        {{- end }}
-        {{- end }}
+        # Note: SSL verification works correctly with combined-ca-bundle ConfigMap
+        # which includes both system CAs and OpenShift Service CA
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
