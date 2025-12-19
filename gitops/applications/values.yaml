@@ -15,6 +15,9 @@ applications:
   llamaStack:
     enabled: true
 
+  milvus:
+    enabled: true
+
 # Configuración para llama-stack (token VLLM)
 secret:
   data:

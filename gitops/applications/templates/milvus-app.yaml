@@ -1,0 +1,27 @@
+{{- if .Values.applications.milvus.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: milvus
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  source:
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    path: charts/milvus
+    helm: 
+      valueFiles: 
+        - values.yaml        
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+{{- end }}
+
