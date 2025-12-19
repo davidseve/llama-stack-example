@@ -8,6 +8,7 @@ providers:
   vllm:
     llama-4-scout:
       modelId: "vllm-inference/llama-4-scout-17b-16e-w4a16"
+      providerModelId: "llama-4-scout-17b-16e-w4a16"  # Actual model name on vLLM server
       url: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
       maxTokens: "4096"
       tlsVerify: "false"
@@ -17,8 +18,6 @@ providers:
 mcpServers:
   openshift:
     uri: "http://ocp-mcp-server:8000/sse"
-  slack:
-    uri: "http://slack-mcp-server:80/sse"
 
 # server:
 #   distribution:

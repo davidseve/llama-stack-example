@@ -82,7 +82,8 @@ providers:
   vllm: {}
     # Example:
     # llama-8b:                                    # provider_id: llama-8b-vllm-inference
-    #   modelId: "meta-llama/Llama-3.1-8B-Instruct"
+    #   modelId: "my-model-alias"                  # Model ID exposed to clients
+    #   providerModelId: "meta-llama/Llama-3.1-8B" # Actual model name on vLLM server (optional)
     #   url: "http://vllm-server:8000/v1"
     #   maxTokens: "4096"
     #   tlsVerify: "true"
