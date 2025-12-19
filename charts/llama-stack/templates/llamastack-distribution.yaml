@@ -123,6 +123,15 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        # Disable SSL verification for Kubeflow/DSPA connections (self-signed certs)
+        {{- if .Values.providers.kubeflow.enabled }}
+        {{- if not (.Values.providers.kubeflow.sslVerify | default true) }}
+        - name: REQUESTS_CA_BUNDLE
+          value: ""
+        - name: CURL_CA_BUNDLE
+          value: ""
+        {{- end }}
+        {{- end }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
