@@ -13,6 +13,12 @@ providers:
       maxTokens: "4096"
       tlsVerify: "false"
       apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"
+  
+  # RAGAS Provider for RAG evaluation metrics
+  ragas:
+    embeddingModel: "granite-embedding-125m"
+    defaultMaxTokens: "2048"
+    defaultTemperature: "0.1"
 
 # MCP Server endpoints
 mcpServers:
