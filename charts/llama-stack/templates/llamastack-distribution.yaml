@@ -130,6 +130,10 @@ spec:
           value: ""
         - name: CURL_CA_BUNDLE
           value: ""
+        - name: SSL_CERT_FILE
+          value: ""
+        - name: PYTHONHTTPSVERIFY
+          value: "0"
         {{- end }}
         {{- end }}
       name: {{ .Values.server.containerSpec.name }}
