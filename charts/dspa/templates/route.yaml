@@ -16,8 +16,7 @@ spec:
   port:
     targetPort: 8888
   tls:
-    termination: reencrypt
-    insecureEdgeTerminationPolicy: Redirect
+    termination: passthrough
   wildcardPolicy: None
 {{- end }}
 
