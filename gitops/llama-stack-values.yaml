@@ -26,11 +26,11 @@ providers:
     llamaStackUrl: "http://llama-stack-example.llama-stack-example.svc.cluster.local:8321"
     resultsS3Prefix: "ragas-results"
     s3CredentialsSecretName: "minio-credentials"
-    # Using external route (cluster has self-signed ingress certificates)
-    pipelinesEndpoint: "https://ds-pipeline-dspa-data-science-project.apps.ocp.sandbox5246.opentlc.com"
+    # Using internal service URL (SSL bypass configured via PYTHONHTTPSVERIFY=0)
+    pipelinesEndpoint: "https://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
-    sslVerify: false  # Disable SSL verification (cluster uses self-signed ingress certificates)
+    sslVerify: false  # Disable SSL verification (DSPA uses self-signed service certificates)
 
 # MCP Server endpoints
 mcpServers:
