@@ -23,7 +23,7 @@ providers:
 # MCP Server endpoints
 mcpServers:
   openshift:
-    uri: "http://ocp-mcp-server:8000/sse"
+    uri: "http://kubernetes-mcp-kubernetes-mcp-server:8000/sse"
 
 # server:
 #   distribution:
