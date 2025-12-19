@@ -200,6 +200,15 @@ providers:
   tavilySearch:
     maxResults: 3
 
+# MCP Servers configuration (map)
+# key becomes toolgroup_id as "mcp::{key}"
+mcpServers: {}
+  # Example:
+  # openshift:
+  #   uri: "http://ocp-mcp-server:8000/sse"
+  # slack:
+  #   uri: "http://slack-mcp-server:80/sse"
+
 # Vector DBs configuration (map)
 # Note: embeddingModel MUST be one of the configured embedding models from:
 #   - providers.sentenceTransformers.modelId (if enabled)

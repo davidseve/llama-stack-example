@@ -1,14 +1,24 @@
-# Secret configuration
-secret:
-  name: llama-stack-inference-model-secret
-  data:
-    INFERENCE_MODEL: "llama-4-scout-17b-16e-w4a16"  # Base64 encoded value
-    VLLM_URL: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"         # Base64 encoded value
-    VLLM_TLS_VERIFY: "false"  # Base64 encoded value
+# ConfigMap configuration
 config:
   enable: true
-  # file: conf/default-run.yaml
-  file: conf/mcp-run-full-3.yaml
+  file: conf/default-run.yaml
+
+# vLLM Provider configuration
+providers:
+  vllm:
+    llama-4-scout:
+      modelId: "llama-4-scout-17b-16e-w4a16"
+      url: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
+      maxTokens: "4096"
+      tlsVerify: "false"
+      apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"
+
+# MCP Server endpoints
+mcpServers:
+  openshift:
+    uri: "http://ocp-mcp-server:8000/sse"
+  slack:
+    uri: "http://slack-mcp-server:80/sse"
 
 # server:
 #   distribution:
