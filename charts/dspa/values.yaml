@@ -4,6 +4,11 @@
 name: dspa
 namespace: data-science-project
 
+# Route configuration - exposes DSPA API with valid cluster certificates
+# This avoids SSL issues with self-signed internal certificates
+route:
+  enabled: true
+
 apiServer:
   applyTektonCustomResource: true
   archiveLogs: false
