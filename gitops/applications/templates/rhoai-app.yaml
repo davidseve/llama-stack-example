@@ -20,7 +20,7 @@ spec:
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../../gitops/rhoai-values.yaml
+      - ../../gitops/values-common.yaml
   syncPolicy:
     automated:
       prune: true
