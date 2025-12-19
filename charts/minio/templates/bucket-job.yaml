@@ -31,6 +31,8 @@ spec:
               mc mb --ignore-existing myminio/{{ .Values.minio.defaultBucket }}
               echo "Bucket {{ .Values.minio.defaultBucket }} is ready"
           env:
+            - name: MC_CONFIG_DIR
+              value: /tmp/.mc
             - name: MINIO_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
