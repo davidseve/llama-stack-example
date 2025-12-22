@@ -123,8 +123,6 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
-        # Note: SSL verification works correctly with combined-ca-bundle ConfigMap
-        # which includes both system CAs and OpenShift Service CA
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:

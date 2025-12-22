@@ -4,6 +4,10 @@
 name: dspa
 namespace: data-science-project
 
+# Disable TLS between DSPA pods - allows HTTP access from llama-stack
+# This avoids SSL certificate issues with the ragas remote provider
+podToPodTLS: false
+
 # NetworkPolicy to allow cross-namespace traffic from llama-stack
 # Required because llama-stack runs in a different namespace
 networkPolicy:

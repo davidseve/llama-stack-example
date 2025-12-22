@@ -6,6 +6,8 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+  dspVersion: v2
+  podToPodTLS: {{ .Values.podToPodTLS }}
   apiServer:
     applyTektonCustomResource: true
     archiveLogs: false

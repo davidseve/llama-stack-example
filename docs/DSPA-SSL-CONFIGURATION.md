@@ -1,8 +1,10 @@
-# Configuración SSL para DSPA (DataSciencePipelinesApplication)
+# Configuración para RAGAS Remote con DSPA
 
 ## Resumen
 
-Este documento explica la configuración necesaria para que **llama-stack** pueda comunicarse con **DSPA** (DataSciencePipelinesApplication) en Red Hat OpenShift AI, específicamente para el proveedor `trustyai_ragas_remote`.
+Este documento explica la configuración necesaria para que **llama-stack** pueda ejecutar evaluaciones RAGAS en modo **remote** usando **DSPA** (DataSciencePipelinesApplication) en Red Hat OpenShift AI.
+
+**Referencia oficial**: [opendatahub-io/llama-stack-provider-ragas](https://github.com/opendatahub-io/llama-stack-provider-ragas/blob/main/demos/llama-stack-openshift/README.md)
 
 ## Arquitectura
 
@@ -36,31 +38,23 @@ self-signed certificate in certificate chain
 3. El OpenShift Service CA **NO está incluido** en ese bundle
 4. Por lo tanto, el certificado de DSPA no puede ser validado
 
-## La Solución: Combined CA Bundle
+## Solución SSL (Opcional)
 
-### Componentes
+Por defecto, `sslVerify: false` debería funcionar. Si tienes problemas de SSL con DSPA, puedes habilitar el CA Bundle Job:
 
-1. **Service CA ConfigMap** (`llama-stack-example-service-ca`)
-   - Anotación: `service.beta.openshift.io/inject-cabundle: "true"`
-   - OpenShift inyecta automáticamente el Service CA
-
-2. **Combined CA Bundle ConfigMap** (`combined-ca-bundle`)
-   - Combina: `odh-trusted-ca-bundle` (CAs públicas) + Service CA
-   - NO tiene la anotación de inject (evita ser sobrescrito por CNO)
-
-3. **CA Bundle Job** (PostSync Hook de ArgoCD)
-   - Combina los CAs
-   - Crea/actualiza `combined-ca-bundle`
-   - Parchea el deployment para usar el bundle combinado
-
-### ¿Por qué no modificar `odh-trusted-ca-bundle`?
-
-El ConfigMap `odh-trusted-ca-bundle` tiene la anotación:
 ```yaml
-config.openshift.io/inject-trusted-cabundle: "true"
+kubeflow:
+  caBundleJob:
+    enabled: true  # Crea combined-ca-bundle con Service CA
 ```
 
-Esto hace que el **Cluster Network Operator (CNO)** lo gestione y sobrescriba cualquier modificación manual. Por eso creamos un ConfigMap separado.
+### Componentes del CA Bundle Job
+
+1. **Service CA ConfigMap** - OpenShift inyecta el Service CA
+2. **Combined CA Bundle** - Combina CAs públicas + Service CA
+3. **Job PostSync** - Parchea el deployment
+
+> **Nota**: El `odh-trusted-ca-bundle` es gestionado por CNO y se sobrescribe. Por eso usamos un ConfigMap separado.
 
 ## Archivos Involucrados
 
@@ -80,6 +74,36 @@ Esto hace que el **Cluster Network Operator (CNO)** lo gestione y sobrescriba cu
 | `templates/networkpolicy.yaml` | Permite tráfico cross-namespace |
 | `templates/route.yaml` | (Opcional) Expone DSPA externamente |
 
+## Requisitos Previos
+
+### 1. Token de Pipelines (OBLIGATORIO)
+
+El service account de LlamaStack **no tiene privilegios** para crear pipeline runs. Debes proporcionar un token de usuario:
+
+```bash
+# Añadir token al secret existente
+oc patch secret llama-stack-example-secret -n llama-stack-example --type='json' \
+  -p='[{"op": "add", "path": "/data/KUBEFLOW_PIPELINES_TOKEN", "value": "'$(echo -n "$(oc whoami -t)" | base64)'"}]'
+
+# Reiniciar el pod para que tome el nuevo token
+oc rollout restart deployment/llama-stack-example -n llama-stack-example
+```
+
+> ⚠️ **IMPORTANTE**: El token de usuario expira. Deberás renovarlo periódicamente.
+
+### 2. URL Externa de Llama Stack (OBLIGATORIO)
+
+La `llama_stack_url` **debe ser una ruta externa**, ya que los pods del pipeline necesitan acceder a Llama Stack desde fuera:
+
+```yaml
+kubeflow:
+  # INCORRECTO - URL interna
+  # llamaStackUrl: "http://llama-stack-example.llama-stack-example.svc.cluster.local:8321"
+  
+  # CORRECTO - Ruta externa
+  llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.your-cluster.com"
+```
+
 ## Configuración de Values
 
 ### `gitops/llama-stack-values.yaml`
@@ -88,10 +112,12 @@ Esto hace que el **Cluster Network Operator (CNO)** lo gestione y sobrescriba cu
 providers:
   kubeflow:
     enabled: true
+    llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.your-cluster.com"  # Ruta externa
     pipelinesEndpoint: "https://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
-    sslVerify: false  # La verificación real se hace via CA bundle
+    sslVerify: false
     namespace: "data-science-project"
-    # ... otras configuraciones
+    caBundleJob:
+      enabled: false  # No necesario normalmente
 ```
 
 ### `charts/dspa/values.yaml`
