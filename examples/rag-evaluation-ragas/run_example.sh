@@ -39,6 +39,8 @@ RESULTS_FILE="${RESULTS_FILE:-output/millbrook_ragas_results.json}"
 
 # Advanced options
 VERIFY_SSL="${VERIFY_SSL:-false}"
+# Evaluation mode: "inline" (default) or "remote" (requires DSPA/Kubeflow)
+RAGAS_MODE="${RAGAS_MODE:-inline}"
 # Use RAGAS-specific vector store ID
 VECTOR_STORE_ID="${RAGAS_VECTOR_STORE_ID:-${VECTOR_STORE_ID:-}}"
 
@@ -58,6 +60,7 @@ echo "======================================================================"
 echo "Llama Stack URL:    $LLAMA_STACK_URL"
 echo "Model:              $MODEL_ID"
 echo "Embedding Model:    $EMBEDDING_MODEL"
+echo "RAGAS Mode:         $RAGAS_MODE"
 echo "Documents:          $DOCUMENTS_DIR"
 echo "Input Dataset:      $INPUT_DATASET"
 echo "Output Dataset:     $OUTPUT_DATASET"
@@ -93,7 +96,11 @@ else
         --chunk-size 2000 \
         --chunk-overlap 200 \
         $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") \
-        2>&1)
+        2>&1) || {
+        echo "$UPLOAD_OUTPUT"
+        echo "❌ ERROR: milvus-upload.py failed"
+        exit 1
+    }
     
     echo "$UPLOAD_OUTPUT"
     
@@ -128,7 +135,10 @@ python rag.py \
     --vector-store-id "$VECTOR_STORE_ID" \
     --input "$INPUT_DATASET" \
     --output "$OUTPUT_DATASET" \
-    $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl")
+    $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") || {
+    echo "❌ ERROR: rag.py failed"
+    exit 1
+}
 
 echo ""
 echo "✅ Step 2 Complete - RAG dataset saved to: $OUTPUT_DATASET"
@@ -147,8 +157,13 @@ python evaluate_ragas.py \
     --model-id "$MODEL_ID" \
     --dataset "$OUTPUT_DATASET" \
     --output "$RESULTS_FILE" \
+    --mode "$RAGAS_MODE" \
     --batch-size 1 \
-    $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl")
+    --max-wait 120 \
+    $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") || {
+    echo "❌ ERROR: evaluate_ragas.py failed"
+    exit 1
+}
 
 echo ""
 echo "✅ Step 3 Complete - Evaluation results saved to: $RESULTS_FILE"
@@ -176,9 +191,12 @@ echo ""
 echo "2. Re-run evaluation without re-uploading documents:"
 echo "   RAGAS_VECTOR_STORE_ID=$VECTOR_STORE_ID ./run_example.sh"
 echo ""
-echo "3. Evaluate with specific metrics only:"
+echo "3. Use REMOTE mode (requires DSPA/Kubeflow):"
+echo "   RAGAS_MODE=remote ./run_example.sh"
+echo ""
+echo "4. Evaluate with specific metrics only:"
 echo "   python evaluate_ragas.py --dataset $OUTPUT_DATASET \\"
-echo "       --metrics answer_relevancy faithfulness --batch-size 1"
+echo "       --metrics answer_relevancy faithfulness --mode inline"
 echo "======================================================================"
 echo ""
 

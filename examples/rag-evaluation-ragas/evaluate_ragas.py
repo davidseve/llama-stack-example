@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-RAGAS Evaluation Script using Llama Stack SDK (Remote Mode)
+RAGAS Evaluation Script using Llama Stack SDK
 
 This script evaluates RAG systems using RAGAS metrics through Llama Stack's
-evaluation API. It uses the REMOTE provider mode which runs evaluations as
-Kubeflow/Data Science Pipelines jobs on OpenShift AI.
+evaluation API. It supports two modes:
+
+- INLINE mode: Runs evaluation directly in the Llama Stack pod (default)
+- REMOTE mode: Runs evaluations as Kubeflow/Data Science Pipelines jobs
 
 Based on:
 - Red Hat OpenShift AI Self-Managed 3.0 - Evaluating RAG systems with RAGAS
-- Llama Stack Provider RAGAS - remote mode with DSPA integration
+- Llama Stack Provider RAGAS
 """
 
 import json
@@ -153,7 +155,8 @@ def register_benchmark(
     client: LlamaStackClient,
     benchmark_id: str,
     dataset_id: str,
-    metrics: List[str]
+    metrics: List[str],
+    provider_id: str = "trustyai_ragas_inline"
 ) -> None:
     """
     Register benchmark with Llama Stack eval API.
@@ -163,9 +166,11 @@ def register_benchmark(
         benchmark_id: Benchmark identifier
         dataset_id: Dataset identifier
         metrics: List of RAGAS metrics
+        provider_id: Provider ID (trustyai_ragas_inline or trustyai_ragas_remote)
     """
     print(f"\n📊 Registering benchmark: {benchmark_id}")
     print(f"   Dataset: {dataset_id}")
+    print(f"   Provider: {provider_id}")
     print(f"   Metrics: {', '.join(metrics)}")
     
     # Use SDK's internal HTTP client to register benchmark
@@ -174,7 +179,7 @@ def register_benchmark(
         "benchmark_id": benchmark_id,
         "dataset_id": dataset_id,
         "scoring_functions": metrics,
-        "provider_id": "trustyai_ragas_remote"
+        "provider_id": provider_id
     }
     
     try:
@@ -199,13 +204,14 @@ def run_evaluation(
     embedding_model_id: Optional[str] = None,
     max_wait_seconds: int = 900,
     poll_interval: int = 5,
+    mode: str = "inline",
 ) -> Any:
     """
-    Run RAGAS evaluation using remote provider (DSPA/Kubeflow Pipelines).
+    Run RAGAS evaluation.
     
-    The evaluation is submitted as a pipeline job to Data Science Pipelines
-    Application (DSPA) on OpenShift AI. The job runs asynchronously and
-    this function polls for completion.
+    Two modes are supported:
+    - inline: Runs evaluation directly in the Llama Stack pod (synchronous)
+    - remote: Runs as a Kubeflow/DSPA pipeline job (asynchronous)
     
     Args:
         client: LlamaStackClient instance
@@ -216,12 +222,16 @@ def run_evaluation(
         embedding_model_id: Embedding model (optional, uses default if not provided)
         max_wait_seconds: Maximum seconds to wait for the remote job
         poll_interval: Seconds between job status checks
+        mode: Evaluation mode - "inline" or "remote"
         
     Returns:
         Evaluation results
     """
-    print(f"\n🚀 Running evaluation...")
+    provider_id = "trustyai_ragas_inline" if mode == "inline" else "trustyai_ragas_remote"
+    
+    print(f"\n🚀 Running evaluation ({mode.upper()} mode)...")
     print(f"   Benchmark ID: {benchmark_id}")
+    print(f"   Provider: {provider_id}")
     print(f"   Metrics: {', '.join(metrics)}")
     print(f"   LLM Model: {model_id}")
     if embedding_model_id:
@@ -258,10 +268,8 @@ def run_evaluation(
     }
     
     # 4. Build extra_body for RAGAS-specific parameters
-    # Note: provider is "trustyai_ragas_remote" for DSPA pipeline execution
-    # embedding_model is required by the server
     extra_body = {
-        "provider_id": "trustyai_ragas_remote",
+        "provider_id": provider_id,
         "judge_model": model_id,
         "embedding_model": embedding_model_id or "granite-embedding-125m",
     }
@@ -277,78 +285,114 @@ def run_evaluation(
     print(f"✓ Evaluation job started")
     print(f"   Job ID: {job.job_id}")
     
-    # Wait for the job to complete and retrieve results
-    print(f"\n📥 Waiting for evaluation to complete...")
+    # For INLINE mode, the job should complete quickly (synchronous)
+    # For REMOTE mode, we need to poll for completion
     
-    import time
-    waited = 0
-    last_status = None
-    
-    while True:
-        try:
-            # Check job status
-            job_status = client.alpha.eval.jobs.status(
-                benchmark_id=benchmark_id,
-                job_id=job.job_id
-            )
-            
-            status_value = None
-            if hasattr(job_status, 'status'):
-                status_value = job_status.status
-            elif isinstance(job_status, dict):
-                status_value = job_status.get('status')
-            
-            if status_value:
-                last_status = status_value
-                print(f"   Status: {status_value}")
-            else:
-                print(f"   Status: <unknown> ({job_status})")
-            
-            if status_value in ['completed', 'success', 'succeeded']:
-                print(f"✓ Evaluation completed successfully")
-                break
-            elif status_value in ['failed', 'error']:
-                raise Exception(f"Evaluation job failed: {job_status}")
-            
+    if mode == "inline":
+        # Inline mode - poll for results (may take some time for LLM scoring)
+        print(f"\n📥 Waiting for inline evaluation results...")
+        import time
+        
+        results = None
+        waited = 0
+        
+        while waited < max_wait_seconds:
             time.sleep(poll_interval)
             waited += poll_interval
             
-            if waited >= max_wait_seconds:
-                raise TimeoutError(
-                    f"Evaluation job {job.job_id} did not complete within {max_wait_seconds} seconds "
-                    f"(last status: {last_status or 'unknown'}). "
-                    "Increase --max-wait or try a smaller batch."
+            try:
+                result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
+                response = client._client.get(result_url)
+                response.raise_for_status()
+                results = response.json()
+                
+                if results.get("scores"):
+                    print(f"   ✓ Results received after {waited}s")
+                    break
+                else:
+                    print(f"   Waiting... ({waited}s)")
+            except Exception as e:
+                print(f"   Waiting... ({waited}s) - {e}")
+        
+        if not results or not results.get("scores"):
+            # Try one more time with separate client
+            try:
+                http_client = httpx.Client(verify=False, timeout=60)
+                result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
+                response = http_client.get(result_url)
+                response.raise_for_status()
+                results = response.json()
+                http_client.close()
+            except Exception:
+                pass
+    else:
+        # Remote mode - poll for completion
+        print(f"\n📥 Waiting for evaluation to complete...")
+        
+        import time
+        waited = 0
+        last_status = None
+        
+        while True:
+            try:
+                # Check job status
+                job_status = client.alpha.eval.jobs.status(
+                    benchmark_id=benchmark_id,
+                    job_id=job.job_id
                 )
+                
+                status_value = None
+                if hasattr(job_status, 'status'):
+                    status_value = job_status.status
+                elif isinstance(job_status, dict):
+                    status_value = job_status.get('status')
+                
+                if status_value:
+                    last_status = status_value
+                    print(f"   Status: {status_value}")
+                else:
+                    print(f"   Status: <unknown> ({job_status})")
+                
+                if status_value in ['completed', 'success', 'succeeded']:
+                    print(f"✓ Evaluation completed successfully")
+                    break
+                elif status_value in ['failed', 'error']:
+                    raise Exception(f"Evaluation job failed: {job_status}")
+                
+                time.sleep(poll_interval)
+                waited += poll_interval
+                
+                if waited >= max_wait_seconds:
+                    raise TimeoutError(
+                        f"Evaluation job {job.job_id} did not complete within {max_wait_seconds} seconds "
+                        f"(last status: {last_status or 'unknown'}). "
+                        "Increase --max-wait or try a smaller batch."
+                    )
+            except Exception as e:
+                # If status check fails, try to retrieve results anyway
+                print(f"   Status check note: {e}")
+                break
+        
+        # Retrieve results
+        print(f"\n📥 Retrieving evaluation results...")
+        
+        try:
+            result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
+            response = client._client.get(result_url)
+            response.raise_for_status()
+            results = response.json()
         except Exception as e:
-            # If status check fails, try to retrieve results anyway
-            print(f"   Status check note: {e}")
-            break
-    
-    # Retrieve results
-    print(f"\n📥 Retrieving evaluation results...")
-    
-    # Get results using SDK - try different approaches
-    try:
-        # Try direct result endpoint via custom client
-        import httpx
-        result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
-        response = client._client.get(result_url)
-        response.raise_for_status()
-        results = response.json()
-    except Exception as e:
-        print(f"⚠️  Could not get results via SDK client: {e}")
-        # Fallback to separate httpx client
-        http_client = httpx.Client(verify=False, timeout=30)
-        result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
-        response = http_client.get(result_url)
-        response.raise_for_status()
-        results = response.json()
-        http_client.close()
+            print(f"⚠️  Could not get results via SDK client: {e}")
+            http_client = httpx.Client(verify=False, timeout=30)
+            result_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}/result"
+            response = http_client.get(result_url)
+            response.raise_for_status()
+            results = response.json()
+            http_client.close()
     
     if not results.get("scores"):
         raise RuntimeError(
-            f"Evaluation job {job.job_id} returned no scores "
-            f"(last status: {last_status or 'unknown'}). "
+            f"Evaluation job {job.job_id} returned no scores. "
             "The job may still be running or failed server-side."
         )
     
@@ -449,9 +493,10 @@ def evaluate_ragas(
     batch_size: Optional[int] = None,
     job_wait_timeout: int = 900,
     poll_interval: int = 5,
+    mode: str = "inline",
 ) -> Dict[str, Any]:
     """
-    Complete RAGAS evaluation workflow using Llama Stack remote provider (DSPA).
+    Complete RAGAS evaluation workflow using Llama Stack.
     
     Args:
         llama_stack_url: Base URL of Llama Stack server
@@ -465,10 +510,12 @@ def evaluate_ragas(
         batch_size: Size of batches for evaluation (None = all at once)
         job_wait_timeout: Maximum seconds to wait for remote job completion
         poll_interval: Seconds between job status checks
+        mode: Evaluation mode - "inline" (default) or "remote" (requires DSPA/Kubeflow)
         
     Returns:
         Formatted evaluation results
     """
+    provider_id = "trustyai_ragas_inline" if mode == "inline" else "trustyai_ragas_remote"
     # Initialize client
     print("🔗 Connecting to Llama Stack...")
     print(f"   URL: {llama_stack_url}")
@@ -539,7 +586,7 @@ def evaluate_ragas(
             register_dataset(client, dataset_id, batch)
             
             # Register benchmark
-            register_benchmark(client, benchmark_id, dataset_id, metrics)
+            register_benchmark(client, benchmark_id, dataset_id, metrics, provider_id)
             
             # Run evaluation
             batch_result = run_evaluation(
@@ -551,6 +598,7 @@ def evaluate_ragas(
                 embedding_model_id=embedding_model_id,
                 max_wait_seconds=job_wait_timeout,
                 poll_interval=poll_interval,
+                mode=mode,
             )
             
             # Process results
@@ -639,8 +687,11 @@ Available RAGAS Metrics:
   {chr(10).join(f'  - {m}' for m in AVAILABLE_METRICS)}
 
 Examples:
-  # Basic usage with default metrics
+  # Basic usage with INLINE mode (default - runs in Llama Stack pod)
   python evaluate_ragas.py --dataset output/millbrook_ragas_dataset.json
+  
+  # Use REMOTE mode (requires DSPA/Kubeflow configured)
+  python evaluate_ragas.py --mode remote --dataset output/millbrook_ragas_dataset.json
   
   # Use specific metrics
   python evaluate_ragas.py \\
@@ -664,9 +715,11 @@ Examples:
     --dataset output/millbrook_ragas_dataset.json \\
     --output output/millbrook_ragas_results.json
 
-Note: This script uses the REMOTE provider mode, which runs RAGAS evaluation
-as a Kubeflow/Data Science Pipeline job on OpenShift AI (DSPA).
-The evaluation job runs asynchronously and results are retrieved when complete.
+Modes:
+  --mode inline (default): Runs evaluation directly in the Llama Stack pod.
+                           No external dependencies required.
+  --mode remote:           Runs as a Kubeflow/DSPA pipeline job.
+                           Requires DSPA configured and accessible.
         """
     )
     
@@ -699,6 +752,12 @@ The evaluation job runs asynchronously and results are retrieved when complete.
         choices=AVAILABLE_METRICS,
         default=DEFAULT_METRICS,
         help=f"RAGAS metrics to compute (default: {' '.join(DEFAULT_METRICS)})"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["inline", "remote"],
+        default="inline",
+        help="Evaluation mode: 'inline' runs in Llama Stack pod (default), 'remote' uses DSPA/Kubeflow"
     )
     parser.add_argument(
         "--verify-ssl",
@@ -743,9 +802,11 @@ The evaluation job runs asynchronously and results are retrieved when complete.
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     print("=" * 70)
-    print("RAGAS EVALUATION WITH LLAMA STACK (REMOTE/DSPA MODE)")
+    mode_label = "INLINE" if args.mode == "inline" else "REMOTE/DSPA"
+    print(f"RAGAS EVALUATION WITH LLAMA STACK ({mode_label} MODE)")
     print("=" * 70)
     print(f"Server:     {args.url}")
+    print(f"Mode:       {args.mode.upper()}")
     print(f"Model:      {args.model_id}")
     if args.embedding_model:
         print(f"Embedding:  {args.embedding_model}")
@@ -754,7 +815,8 @@ The evaluation job runs asynchronously and results are retrieved when complete.
     print(f"Metrics:    {', '.join(args.metrics)}")
     if args.batch_size:
         print(f"Batch Size: {args.batch_size}")
-    print(f"Max Wait:   {args.max_wait}s  |  Poll Interval: {args.poll_interval}s")
+    if args.mode == "remote":
+        print(f"Max Wait:   {args.max_wait}s  |  Poll Interval: {args.poll_interval}s")
     if not args.verify_ssl:
         print("⚠️  SSL verification: disabled")
     print("=" * 70)
@@ -772,6 +834,7 @@ The evaluation job runs asynchronously and results are retrieved when complete.
             batch_size=args.batch_size,
             job_wait_timeout=args.max_wait,
             poll_interval=args.poll_interval,
+            mode=args.mode,
         )
         
         print("\n" + "=" * 70)

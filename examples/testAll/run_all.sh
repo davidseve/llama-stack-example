@@ -3,14 +3,15 @@
 # Run All RAG Examples
 # =============================================================================
 # This script executes both RAG examples in sequence:
-#   1. rag-mcp-chatbot - Chatbot with RAG + MCP tools
-#   2. rag-evaluation-ragas - RAG evaluation with RAGAS metrics
+#   1. rag-evaluation-ragas - RAG evaluation with RAGAS metrics
+#   2. rag-mcp-chatbot - Chatbot with RAG + MCP tools
 #
 # Usage:
-#   ./run_all.sh                    # Run all examples
+#   ./run_all.sh                    # Run all examples (RAGAS inline mode)
 #   ./run_all.sh --skip-mcp         # Skip rag-mcp-chatbot
 #   ./run_all.sh --skip-evaluation  # Skip rag-evaluation-ragas
 #   ./run_all.sh --dry-run          # Show what would be executed
+#   RAGAS_MODE=remote ./run_all.sh  # Use RAGAS remote mode (requires DSPA)
 # =============================================================================
 
 set -e
@@ -70,6 +71,14 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip-evaluation   Skip rag-evaluation-ragas example"
             echo "  --dry-run           Show what would be executed without running"
             echo "  --help, -h          Show this help message"
+            echo ""
+            echo "Environment Variables:"
+            echo "  RAGAS_MODE          Evaluation mode: 'inline' (default) or 'remote' (requires DSPA)"
+            echo ""
+            echo "Examples:"
+            echo "  $0                        # Run all with inline RAGAS mode"
+            echo "  RAGAS_MODE=remote $0      # Run all with remote RAGAS mode"
+            echo "  $0 --skip-evaluation      # Run only chatbot, skip RAGAS"
             exit 0
             ;;
         *)
@@ -127,7 +136,10 @@ run_example() {
     
     cd "$dir"
     chmod +x "$script"
-    ./"$script"
+    if ! ./"$script"; then
+        print_error "$name failed!"
+        return 1
+    fi
     
     print_success "$name completed!"
 }
@@ -141,6 +153,7 @@ print_header "🚀 RAG EXAMPLES TEST RUNNER"
 echo -e "${BLUE}Examples directory:${NC} $EXAMPLES_DIR"
 echo -e "${BLUE}Skip MCP:${NC} $SKIP_MCP"
 echo -e "${BLUE}Skip Evaluation:${NC} $SKIP_EVALUATION"
+echo -e "${BLUE}RAGAS Mode:${NC} ${RAGAS_MODE:-inline}"
 echo -e "${BLUE}Dry run:${NC} $DRY_RUN"
 echo ""
 
@@ -148,24 +161,7 @@ EXAMPLES_RUN=0
 EXAMPLES_FAILED=0
 
 # -----------------------------------------------------------------------------
-# Example 1: rag-mcp-chatbot
-# -----------------------------------------------------------------------------
-if [ "$SKIP_MCP" = false ]; then
-    if run_example \
-        "RAG + MCP Chatbot" \
-        "$EXAMPLES_DIR/rag-mcp-chatbot" \
-        "run_example.sh"; then
-        EXAMPLES_RUN=$((EXAMPLES_RUN + 1))
-    else
-        EXAMPLES_FAILED=$((EXAMPLES_FAILED + 1))
-        print_error "rag-mcp-chatbot failed!"
-    fi
-else
-    print_info "Skipping rag-mcp-chatbot (--skip-mcp)"
-fi
-
-# -----------------------------------------------------------------------------
-# Example 2: rag-evaluation-ragas
+# Example 1: rag-evaluation-ragas
 # -----------------------------------------------------------------------------
 if [ "$SKIP_EVALUATION" = false ]; then
     if run_example \
@@ -179,6 +175,23 @@ if [ "$SKIP_EVALUATION" = false ]; then
     fi
 else
     print_info "Skipping rag-evaluation-ragas (--skip-evaluation)"
+fi
+
+# -----------------------------------------------------------------------------
+# Example 2: rag-mcp-chatbot
+# -----------------------------------------------------------------------------
+if [ "$SKIP_MCP" = false ]; then
+    if run_example \
+        "RAG + MCP Chatbot" \
+        "$EXAMPLES_DIR/rag-mcp-chatbot" \
+        "run_example.sh"; then
+        EXAMPLES_RUN=$((EXAMPLES_RUN + 1))
+    else
+        EXAMPLES_FAILED=$((EXAMPLES_FAILED + 1))
+        print_error "rag-mcp-chatbot failed!"
+    fi
+else
+    print_info "Skipping rag-mcp-chatbot (--skip-mcp)"
 fi
 
 # =============================================================================

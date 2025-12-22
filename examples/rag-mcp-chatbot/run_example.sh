@@ -58,7 +58,11 @@ if [ -z "$VECTOR_STORE_ID" ]; then
         --chunk-size 2000 \
         --chunk-overlap 200 \
         $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") \
-        2>&1)
+        2>&1) || {
+        echo "$UPLOAD_OUTPUT"
+        echo "❌ ERROR: milvus-upload.py failed"
+        exit 1
+    }
     
     echo "$UPLOAD_OUTPUT"
     
@@ -95,7 +99,10 @@ echo "STEP 2/2: Running Chatbot"
 echo "======================================================================"
 echo ""
 
-python chatbot.py
+python chatbot.py || {
+    echo "❌ ERROR: chatbot.py failed"
+    exit 1
+}
 
 echo ""
 echo "======================================================================"

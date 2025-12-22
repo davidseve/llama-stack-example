@@ -30,8 +30,7 @@ Use this option when you want to consume models from an external provider (e.g.,
 
 1. Export your MaaS configuration as environment variables:
    ```bash
-   export VLLM_API_TOKEN="<your_token>"
-   export VLLM_URL="<your_maas_endpoint_url>"
+   export LLAMA_4_SCOUT_API_TOKEN="<your_token>"
    ```
 
 2. Deploy using GitOps (OpenShift GitOps):
@@ -40,7 +39,7 @@ Use this option when you want to consume models from an external provider (e.g.,
    ```
 
 **Notes:**
-- `envsubst` replaces `${VLLM_API_TOKEN}` and `${VLLM_URL}` before sending it to `oc`.
+- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}` before sending it to `oc`.
 - Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
 
 ---

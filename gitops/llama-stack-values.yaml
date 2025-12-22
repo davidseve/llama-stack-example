@@ -22,7 +22,7 @@ providers:
 
   # Kubeflow/DSPA configuration for ragas-remote
   kubeflow:
-    enabled: true
+    enabled: false
     llamaStackUrl: "http://llama-stack-example.llama-stack-example.svc.cluster.local:8321"
     resultsS3Prefix: "ragas-results"
     s3CredentialsSecretName: "minio-credentials"
