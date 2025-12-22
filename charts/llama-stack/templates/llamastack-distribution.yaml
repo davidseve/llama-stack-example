@@ -116,7 +116,7 @@ spec:
               name: {{ .Values.global.name }}-secret
         {{- end }}
         # Kubeflow Pipelines Token (required for RAGAS remote mode)
-        {{- if .Values.providers.kubeflow.enabled }}
+        {{- if and .Values.providers.kubeflow.enabled .Values.secret.data.KUBEFLOW_PIPELINES_TOKEN }}
         - name: KUBEFLOW_PIPELINES_TOKEN
           valueFrom:
             secretKeyRef:
