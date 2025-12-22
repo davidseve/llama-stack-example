@@ -9,7 +9,7 @@ Este documento explica la configuración necesaria para que **llama-stack** pued
 ## Arquitectura
 
 ```
-┌─────────────────────────────┐     HTTPS (port 8888)     ┌──────────────────────────────┐
+┌─────────────────────────────┐      HTTP (port 8888)      ┌──────────────────────────────┐
 │   llama-stack-example       │ ──────────────────────────▶│   data-science-project       │
 │   namespace                 │                            │   namespace                  │
 │                             │                            │                              │
@@ -22,25 +22,37 @@ Este documento explica la configuración necesaria para que **llama-stack** pued
 
 ## El Problema: SSL Certificate Verification
 
-DSPA expone su API a través de HTTPS en el puerto 8888, utilizando certificados firmados por el **OpenShift Service CA** (Autoridad Certificadora interna de servicios).
-
-Cuando `llama-stack` intenta conectar con DSPA, obtiene:
+Por defecto, DSPA expone su API a través de **HTTPS** en el puerto 8888, utilizando certificados firmados por el **OpenShift Service CA**. El provider `llama-stack-provider-ragas` hace llamadas `requests.get()` directas que no respetan `ssl_verify: false`, causando:
 
 ```
 SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: 
 self-signed certificate in certificate chain
 ```
 
-### ¿Por qué ocurre?
+## Solución: Deshabilitar podToPodTLS en DSPA
 
-1. El operador de LlamaStack configura `SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt`
-2. Ese bundle contiene solo CAs públicas (Let's Encrypt, DigiCert, etc.)
-3. El OpenShift Service CA **NO está incluido** en ese bundle
-4. Por lo tanto, el certificado de DSPA no puede ser validado
+La solución más simple y recomendada es **deshabilitar TLS** entre los componentes de DSPA, forzando comunicación HTTP:
 
-## Solución SSL (Opcional)
+### Configuración en `charts/dspa/values.yaml`
 
-Por defecto, `sslVerify: false` debería funcionar. Si tienes problemas de SSL con DSPA, puedes habilitar el CA Bundle Job:
+```yaml
+podToPodTLS: false  # Deshabilita TLS entre componentes DSPA
+```
+
+### Configuración en `gitops/llama-stack-values.yaml`
+
+```yaml
+kubeflow:
+  # IMPORTANTE: Usar HTTP, no HTTPS
+  pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
+  sslVerify: false
+```
+
+> **Nota**: Con `podToPodTLS: false`, DSPA escucha en HTTP en el puerto 8888. Esto es seguro para comunicación intra-cluster.
+
+## Solución SSL Alternativa (CA Bundle Job)
+
+Si necesitas mantener HTTPS, puedes habilitar el CA Bundle Job:
 
 ```yaml
 kubeflow:
@@ -78,7 +90,20 @@ kubeflow:
 
 ### 1. Token de Pipelines (OBLIGATORIO)
 
-El service account de LlamaStack **no tiene privilegios** para crear pipeline runs. Debes proporcionar un token de usuario:
+El service account de LlamaStack **no tiene privilegios** para crear pipeline runs. Debes proporcionar un token de usuario.
+
+#### Opción A: Via GitOps (Recomendado)
+
+Exporta el token antes de aplicar el appOfApps:
+
+```bash
+export LLAMA_4_SCOUT_API_TOKEN="<your_token>"
+export KUBEFLOW_PIPELINES_TOKEN="$(oc whoami -t)"
+
+envsubst < gitops/appOfApps.yaml | oc apply -f -
+```
+
+#### Opción B: Manualmente
 
 ```bash
 # Añadir token al secret existente
@@ -89,7 +114,7 @@ oc patch secret llama-stack-example-secret -n llama-stack-example --type='json' 
 oc rollout restart deployment/llama-stack-example -n llama-stack-example
 ```
 
-> ⚠️ **IMPORTANTE**: El token de usuario expira. Deberás renovarlo periódicamente.
+> ⚠️ **IMPORTANTE**: El token de usuario expira (~24h). Deberás renovarlo periódicamente.
 
 ### 2. URL Externa de Llama Stack (OBLIGATORIO)
 
@@ -113,18 +138,17 @@ providers:
   kubeflow:
     enabled: true
     llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.your-cluster.com"  # Ruta externa
-    pipelinesEndpoint: "https://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
+    pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"  # HTTP, no HTTPS
     sslVerify: false
     namespace: "data-science-project"
     caBundleJob:
-      enabled: false  # No necesario normalmente
+      enabled: false  # No necesario con podToPodTLS: false
 ```
 
 ### `charts/dspa/values.yaml`
 
 ```yaml
-route:
-  enabled: false  # No necesaria - usamos servicio interno
+podToPodTLS: false  # IMPORTANTE: Deshabilita TLS para evitar problemas de certificados
 
 networkPolicy:
   enabled: true   # Requerida para tráfico cross-namespace
@@ -197,18 +221,17 @@ PostSync: CA Bundle Job
 
 ### Error: SSL Certificate Verify Failed
 
+Verifica que `podToPodTLS` esté deshabilitado y uses HTTP:
+
 ```bash
-# Verificar que el combined-ca-bundle existe
-oc get configmap combined-ca-bundle -n llama-stack-example
+# Verificar podToPodTLS
+oc get dspa dspa -n data-science-project -o jsonpath='{.spec.podToPodTLS}'
+# Debe mostrar: false
 
-# Verificar que incluye Service CA
-oc get configmap combined-ca-bundle -n llama-stack-example \
-  -o jsonpath='{.data.ca-bundle\.crt}' | grep -c "BEGIN CERTIFICATE"
-# Debería mostrar al menos 2
-
-# Verificar que el pod usa el bundle correcto
-oc get deployment llama-stack-example -n llama-stack-example -o yaml | \
-  grep -A5 "volumes:" | grep "configMap"
+# Verificar que usas HTTP en la configuración
+oc get configmap llama-stack-example-config -n llama-stack-example \
+  -o jsonpath='{.data.run\.yaml}' | grep pipelines_endpoint
+# Debe mostrar: http:// (no https://)
 ```
 
 ### Error: Connection Timeout a DSPA
@@ -218,9 +241,9 @@ oc get deployment llama-stack-example -n llama-stack-example -o yaml | \
 oc get networkpolicy allow-llama-stack-to-dspa -n data-science-project
 
 # Probar conectividad desde llama-stack pod
-POD=$(oc get pod -n llama-stack-example -l app=llama-stack -o name | head -1)
-oc exec -n llama-stack-example $POD -- \
-  curl -s "https://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888/apis/v2beta1/healthz"
+POD=$(oc get pod -n llama-stack-example | grep llama-stack-example | grep Running | awk '{print $1}')
+oc exec -n llama-stack-example $POD -c llama-stack -- \
+  curl -s "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888/apis/v2beta1/healthz"
 ```
 
 ### Error: Connection Reset by Peer
@@ -231,6 +254,19 @@ Esto indica que DSPA tiene OAuth habilitado:
 # Verificar configuración de DSPA
 oc get dspa dspa -n data-science-project -o yaml | grep enableOauth
 # Debe ser: enableOauth: false
+```
+
+### Error: Token Expired / Unauthorized
+
+El token de Kubeflow Pipelines expira (~24h):
+
+```bash
+# Renovar el token
+oc patch secret llama-stack-example-secret -n llama-stack-example --type='json' \
+  -p='[{"op": "replace", "path": "/data/KUBEFLOW_PIPELINES_TOKEN", "value": "'$(echo -n "$(oc whoami -t)" | base64)'"}]'
+
+# Reiniciar para tomar el nuevo token
+oc rollout restart deployment/llama-stack-example -n llama-stack-example
 ```
 
 ## Referencias

@@ -33,14 +33,21 @@ Use this option when you want to consume models from an external provider (e.g.,
    export LLAMA_4_SCOUT_API_TOKEN="<your_token>"
    ```
 
-2. Deploy using GitOps (OpenShift GitOps):
+2. (Optional) For RAGAS remote evaluation with Kubeflow Pipelines, export your user token:
+   ```bash
+   export KUBEFLOW_PIPELINES_TOKEN="$(oc whoami -t)"
+   ```
+   > ⚠️ **Note**: This token expires (~24h). You'll need to renew it periodically.
+
+3. Deploy using GitOps (OpenShift GitOps):
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
 **Notes:**
-- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}` before sending it to `oc`.
+- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}` and `${KUBEFLOW_PIPELINES_TOKEN}` before sending to `oc`.
 - Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
+- See [DSPA SSL Configuration](./docs/DSPA-SSL-CONFIGURATION.md) for details on RAGAS remote evaluation setup.
 
 ---
 
