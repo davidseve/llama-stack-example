@@ -1,4 +1,4 @@
-{{- if .Values.providers.kubeflow.enabled }}
+{{- if and .Values.providers.kubeflow.enabled .Values.providers.kubeflow.caBundleJob.enabled }}
 # ConfigMap to receive OpenShift Service CA injection
 apiVersion: v1
 kind: ConfigMap

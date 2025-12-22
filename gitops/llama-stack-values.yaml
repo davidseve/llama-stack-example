@@ -33,6 +33,9 @@ providers:
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
     sslVerify: false
+    # CA Bundle Job disabled - not needed per official demo
+    caBundleJob:
+      enabled: false
 
 # MCP Server endpoints
 mcpServers:

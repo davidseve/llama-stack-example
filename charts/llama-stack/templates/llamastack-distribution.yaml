@@ -115,8 +115,8 @@ spec:
               key: TAVILY_SEARCH_API_KEY
               name: {{ .Values.global.name }}-secret
         {{- end }}
-        # Kubeflow Pipelines Token
-        {{- if .Values.secret.data.KUBEFLOW_PIPELINES_TOKEN }}
+        # Kubeflow Pipelines Token (required for RAGAS remote mode)
+        {{- if .Values.providers.kubeflow.enabled }}
         - name: KUBEFLOW_PIPELINES_TOKEN
           valueFrom:
             secretKeyRef:
