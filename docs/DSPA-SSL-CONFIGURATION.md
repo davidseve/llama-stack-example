@@ -22,7 +22,7 @@ Este documento explica la configuración necesaria para que **llama-stack** pued
 
 ## El Problema: SSL Certificate Verification
 
-Por defecto, DSPA expone su API a través de **HTTPS** en el puerto 8888, utilizando certificados firmados por el **OpenShift Service CA**. El provider `llama-stack-provider-ragas` hace llamadas `requests.get()` directas que no respetan `ssl_verify: false`, causando:
+Por defecto, DSPA expone su API a través de **HTTPS** en el puerto 8888, utilizando certificados firmados por el **OpenShift Service CA**. Esto causa errores de verificación SSL:
 
 ```
 SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: 
@@ -31,7 +31,7 @@ self-signed certificate in certificate chain
 
 ## Solución: Deshabilitar podToPodTLS en DSPA
 
-La solución más simple y recomendada es **deshabilitar TLS** entre los componentes de DSPA, forzando comunicación HTTP:
+La solución es **deshabilitar TLS** entre los componentes de DSPA, forzando comunicación HTTP:
 
 ### Configuración en `charts/dspa/values.yaml`
 
@@ -50,45 +50,9 @@ kubeflow:
 
 > **Nota**: Con `podToPodTLS: false`, DSPA escucha en HTTP en el puerto 8888. Esto es seguro para comunicación intra-cluster.
 
-## Solución SSL Alternativa (CA Bundle Job)
-
-Si necesitas mantener HTTPS, puedes habilitar el CA Bundle Job:
-
-```yaml
-kubeflow:
-  caBundleJob:
-    enabled: true  # Crea combined-ca-bundle con Service CA
-```
-
-### Componentes del CA Bundle Job
-
-1. **Service CA ConfigMap** - OpenShift inyecta el Service CA
-2. **Combined CA Bundle** - Combina CAs públicas + Service CA
-3. **Job PostSync** - Parchea el deployment
-
-> **Nota**: El `odh-trusted-ca-bundle` es gestionado por CNO y se sobrescribe. Por eso usamos un ConfigMap separado.
-
-## Archivos Involucrados
-
-### Chart: `charts/llama-stack`
-
-| Archivo | Propósito |
-|---------|-----------|
-| `templates/ca-bundle-job.yaml` | Job que combina CAs y parchea deployment |
-| `templates/llamastack-distribution.yaml` | Define el LlamaStackDistribution CR |
-| `conf/default-run.yaml` | Configuración del provider `trustyai_ragas_remote` |
-
-### Chart: `charts/dspa`
-
-| Archivo | Propósito |
-|---------|-----------|
-| `templates/dspa.yaml` | Define el DataSciencePipelinesApplication |
-| `templates/networkpolicy.yaml` | Permite tráfico cross-namespace |
-| `templates/route.yaml` | (Opcional) Expone DSPA externamente |
-
 ## Requisitos Previos
 
-### 1. Token de Pipelines (OBLIGATORIO)
+### 1. Token de Pipelines (OBLIGATORIO para RAGAS remote)
 
 El service account de LlamaStack **no tiene privilegios** para crear pipeline runs. Debes proporcionar un token de usuario.
 
@@ -129,7 +93,7 @@ kubeflow:
   llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.your-cluster.com"
 ```
 
-## Configuración de Values
+## Configuración Completa
 
 ### `gitops/llama-stack-values.yaml`
 
@@ -138,32 +102,26 @@ providers:
   kubeflow:
     enabled: true
     llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.your-cluster.com"  # Ruta externa
-    pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"  # HTTP, no HTTPS
+    pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"  # HTTP
     sslVerify: false
     namespace: "data-science-project"
-    caBundleJob:
-      enabled: false  # No necesario con podToPodTLS: false
 ```
 
 ### `charts/dspa/values.yaml`
 
 ```yaml
-podToPodTLS: false  # IMPORTANTE: Deshabilita TLS para evitar problemas de certificados
+podToPodTLS: false  # IMPORTANTE: Deshabilita TLS
 
 networkPolicy:
   enabled: true   # Requerida para tráfico cross-namespace
 
 apiServer:
-  enableOauth: false  # Importante: permite acceso service-to-service
+  enableOauth: false  # Permite acceso service-to-service
 ```
 
 ## NetworkPolicy
 
-La NetworkPolicy es **necesaria** porque:
-
-1. DSPA está en namespace `data-science-project`
-2. llama-stack está en namespace `llama-stack-example`
-3. OpenShift puede tener políticas de red por defecto que bloquean tráfico cross-namespace
+La NetworkPolicy es **necesaria** porque llama-stack y DSPA están en namespaces diferentes:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -183,38 +141,6 @@ spec:
       ports:
         - port: 8888
         - port: 8887
-```
-
-## Route (Opcional)
-
-La Route **NO es necesaria** para la configuración actual porque:
-
-1. Usamos el servicio interno HTTPS
-2. El CA bundle combinado incluye el Service CA
-3. La comunicación es cluster-interna
-
-Solo habilitar la Route si se necesita acceso externo a DSPA.
-
-## Flujo de Despliegue (ArgoCD)
-
-```
-sync-wave 0-3: Operadores base (RHOAI)
-     │
-     ▼
-sync-wave 4: MinIO (almacenamiento para pipelines)
-     │
-     ▼
-sync-wave 5: llama-stack (crea LlamaStackDistribution)
-     │
-     ▼
-sync-wave 10: DSPA (requiere CRD de RHOAI)
-     │
-     ▼
-PostSync: CA Bundle Job
-  1. Espera Service CA injection
-  2. Combina system CAs + Service CA
-  3. Crea combined-ca-bundle ConfigMap
-  4. Parchea deployment
 ```
 
 ## Troubleshooting
@@ -271,7 +197,5 @@ oc rollout restart deployment/llama-stack-example -n llama-stack-example
 
 ## Referencias
 
-- [OpenShift Service CA Operator](https://docs.openshift.com/container-platform/latest/security/certificate_types_descriptions/service-ca-certificates.html)
 - [OpenShift Network Policy](https://docs.openshift.com/container-platform/latest/networking/network_policy/about-network-policy.html)
 - [RHOAI DataSciencePipelines](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/)
-

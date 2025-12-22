@@ -32,10 +32,7 @@ providers:
     pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
-    sslVerify: false
-    # CA Bundle Job disabled - not needed per official demo
-    caBundleJob:
-      enabled: false
+    sslVerify: false  # Use false with podToPodTLS: false in DSPA
 
 # MCP Server endpoints
 mcpServers:
