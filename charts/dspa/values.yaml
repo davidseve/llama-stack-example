@@ -4,6 +4,9 @@
 name: dspa
 namespace: data-science-project
 
+# Label namespace as Data Science Project (visible in RHOAI dashboard)
+labelNamespace: true
+
 # Disable TLS between DSPA pods - allows HTTP access from llama-stack
 # This avoids SSL certificate issues with the ragas remote provider
 podToPodTLS: false
@@ -20,7 +23,7 @@ apiServer:
   collectMetrics: true
   dbConfigConMaxLifetimeSec: 120
   deploy: true
-  enableOauth: false  # Disabled for internal service-to-service access from llama-stack
+  enableOauth: true  # Required for RHOAI UI - llama-stack uses KUBEFLOW_PIPELINES_TOKEN
   enableSamplePipeline: false
   injectDefaultScript: true
   stripEOF: true

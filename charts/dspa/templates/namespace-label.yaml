@@ -1,0 +1,10 @@
+{{- if .Values.labelNamespace }}
+# Label the namespace as a Data Science Project (visible in RHOAI dashboard)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace }}
+  labels:
+    opendatahub.io/dashboard: "true"
+{{- end }}
+

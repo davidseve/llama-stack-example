@@ -110,13 +110,15 @@ providers:
 ### `charts/dspa/values.yaml`
 
 ```yaml
+labelNamespace: true  # Visible en RHOAI dashboard
+
 podToPodTLS: false  # IMPORTANTE: Deshabilita TLS
 
 networkPolicy:
   enabled: true   # Requerida para tráfico cross-namespace
 
 apiServer:
-  enableOauth: false  # Permite acceso service-to-service
+  enableOauth: true  # Requerido para RHOAI UI - llama-stack usa KUBEFLOW_PIPELINES_TOKEN
 ```
 
 ## NetworkPolicy
