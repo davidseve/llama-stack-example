@@ -36,7 +36,7 @@ providers:
 
   postgres:
     enabled: true
-    host: "postgres.llamastack.svc.cluster.local"
+    host: "postgres.llama-stack-example.svc.cluster.local"
     port: "5432"
     secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
