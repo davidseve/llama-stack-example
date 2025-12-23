@@ -62,11 +62,8 @@ server:
         memory: 500Mi
 
   # Distribution configuration
-  # Use 'name' for ImageStream (OpenShift) or 'image' for direct container image
-  # Only one should be specified. If both are set, 'image' takes precedence.
-  distribution:
-    name: rh-dev                                      # ImageStream name (default)
-    # image: quay.io/opendatahub/llama-stack:latest  # Direct container image (uncomment to use)
+  # distribution:
+  #   image: quay.io/opendatahub/llama-stack:odh
 
   # Storage configuration
   storage:
