@@ -39,6 +39,6 @@ mcpServers:
   openshift:
     uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/sse"
 
-# server:
-#   distribution:
-#     image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v2.25
+server:
+   distribution:
+     image: quay.io/opendatahub/llama-stack:latest
