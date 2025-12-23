@@ -35,7 +35,7 @@ providers:
     sslVerify: false  # Use false with podToPodTLS: false in DSPA TODO verify if it works or not
 
   postgres:
-    enabled: false
+    enabled: true
     host: "postgres.llamastack.svc.cluster.local"
     port: "5432"
     secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
