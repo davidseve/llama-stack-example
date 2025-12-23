@@ -331,16 +331,16 @@ storage:
       password: ${env.POSTGRES_PASSWORD:=llamastack}
 {{- else }}
     sql_inference:
-      type: kv_sqlite
+      type: sql_sqlite
       db_path: /opt/app-root/src/.llama/distributions/rh/inference_store.db
     sql_agents:
-      type: kv_sqlite
+      type: sql_sqlite
       db_path: /opt/app-root/src/.llama/distributions/rh/agents_responses.db
     sql_files:
-      type: kv_sqlite
+      type: sql_sqlite
       db_path: /opt/app-root/src/.llama/distributions/rh/files_metadata.db
     sql_default:
-      type: kv_sqlite
+      type: sql_sqlite
       db_path: /opt/app-root/src/.llama/distributions/rh/default_store.db
 {{- end }}
   stores:
