@@ -5,6 +5,10 @@ config:
 
 # vLLM Provider configuration
 providers:
+  # Disable local sentence-transformers (not available in quay.io/opendatahub/llama-stack:latest)
+  sentenceTransformers:
+    enabled: false
+
   vllm:
     llama-4-scout:
       modelId: "vllm-inference/llama-4-scout-17b-16e-w4a16"
@@ -13,10 +17,21 @@ providers:
       maxTokens: "4096"
       tlsVerify: "false"
       apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"
+
+  # Remote vLLM embedding model (required for RAG when sentence-transformers is disabled)
+  # Configure this if you have a vLLM server serving an embedding model
+  # vllmEmbedding:
+  #   granite-embedding:
+  #     modelId: "granite-embedding-125m"
+  #     url: "http://your-vllm-embedding-server:8000/v1"
+  #     embeddingDimension: 768
+  #     tlsVerify: "false"
+  #     apiTokenSecret: "VLLM_EMBEDDING_API_TOKEN"
   
   # RAGAS Provider for RAG evaluation metrics
+  # NOTE: embeddingModel must match a configured embedding model
   ragas:
-    embeddingModel: "granite-embedding-125m"
+    embeddingModel: ""  # Disabled - no embedding model available
     defaultMaxTokens: "2048"
     defaultTemperature: "0.1"
 
