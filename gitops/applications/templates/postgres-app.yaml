@@ -13,7 +13,7 @@ metadata:
   name: postgres
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "-20"
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   destination:
     server: https://kubernetes.default.svc

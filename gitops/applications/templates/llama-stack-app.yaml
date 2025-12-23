@@ -18,8 +18,8 @@ spec:
     targetRevision: postgress
     helm:
       valueFiles:
-      - ../values-common.yaml
-      - ../llama-stack-values.yaml
+      - ../../gitops/values-common.yaml
+      - ../../gitops/llama-stack-values.yaml
       values: |
         secret:
           data:
