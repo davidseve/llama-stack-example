@@ -18,7 +18,7 @@ spec:
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../../gitops/values-common.yaml
+      - ../values-common.yaml
   syncPolicy:
     automated:
       prune: true

@@ -15,6 +15,8 @@ spec:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: postgress
     helm:
+      valueFiles:
+      - ../values-common.yaml
       values: |
         secret:
           data:
