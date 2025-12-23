@@ -23,7 +23,7 @@ providers:
   # Kubeflow/DSPA configuration for ragas-remote
   # Ref: https://github.com/opendatahub-io/llama-stack-provider-ragas/blob/main/demos/llama-stack-openshift/README.md
   kubeflow:
-    enabled: true
+    enabled: false
     # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
     llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox5296.opentlc.com"
     resultsS3Prefix: "ragas-results"
@@ -32,7 +32,7 @@ providers:
     pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
-    sslVerify: false  # Use false with podToPodTLS: false in DSPA
+    sslVerify: false  # Use false with podToPodTLS: false in DSPA TODO verify if it works or not
 
 # MCP Server endpoints
 mcpServers:

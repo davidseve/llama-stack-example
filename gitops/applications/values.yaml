@@ -21,5 +21,8 @@ applications:
   minio:
     enabled: true
 
+  postgres:
+    enabled: false
+
   dspa:
     enabled: true

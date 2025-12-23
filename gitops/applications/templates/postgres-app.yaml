@@ -1,0 +1,33 @@
+{{- if .Values.applications.postgres.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llamastack
+  labels:
+    kubernetes.io/metadata.name: llamastack
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: llamastack
+  source:
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    path: charts/postgress
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+

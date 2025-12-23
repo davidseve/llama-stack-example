@@ -48,6 +48,9 @@ SKIP_MCP=false
 SKIP_EVALUATION=false
 DRY_RUN=false
 
+# Export RAGAS_MODE so child scripts can use it
+export RAGAS_MODE="${RAGAS_MODE:-inline}"
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -153,7 +156,7 @@ print_header "🚀 RAG EXAMPLES TEST RUNNER"
 echo -e "${BLUE}Examples directory:${NC} $EXAMPLES_DIR"
 echo -e "${BLUE}Skip MCP:${NC} $SKIP_MCP"
 echo -e "${BLUE}Skip Evaluation:${NC} $SKIP_EVALUATION"
-echo -e "${BLUE}RAGAS Mode:${NC} ${RAGAS_MODE:-inline}"
+echo -e "${BLUE}RAGAS Mode:${NC} $RAGAS_MODE"
 echo -e "${BLUE}Dry run:${NC} $DRY_RUN"
 echo ""
 
