@@ -8,7 +8,9 @@ apis:
 - inference
 - safety
 - scoring
+{{- if .Values.providers.telemetry.enabled }}
 - telemetry
+{{- end }}
 - tool_runtime
 - vector_io
 - files
@@ -206,6 +208,7 @@ providers:
     config:
       openai_api_key: ${env.OPENAI_API_KEY:=}
 {{- end }}
+{{- if .Values.providers.telemetry.enabled }}
   telemetry:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
@@ -215,6 +218,7 @@ providers:
       {{- if .Values.providers.telemetry.otlpEndpoint }}
       otel_exporter_otlp_endpoint: {{ .Values.providers.telemetry.otlpEndpoint }}
       {{- end }}
+{{- end }}
   tool_runtime:
   - provider_id: brave-search
     provider_type: remote::brave-search
@@ -355,9 +359,6 @@ storage:
     conversations:
       backend: sql_default
       table_name: openai_conversations
-    prompts:
-      namespace: prompts
-      backend: kv_default
 registered_resources:
   models:
 {{- range $name, $vllm := .Values.providers.vllm }}

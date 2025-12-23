@@ -62,8 +62,11 @@ server:
         memory: 500Mi
 
   # Distribution configuration
-  # distribution:
-  #   image: quay.io/opendatahub/llama-stack:odh
+  # Use 'name' for ImageStream (OpenShift) or 'image' for direct container image
+  # Only one should be specified. If both are set, 'image' takes precedence.
+  distribution:
+    name: rh-dev                                      # ImageStream name (default)
+    # image: quay.io/opendatahub/llama-stack:latest  # Direct container image (uncomment to use)
 
   # Storage configuration
   storage:
@@ -204,8 +207,10 @@ providers:
     sslVerify: false  # Use false with podToPodTLS: false in DSPA
 
   # Telemetry configuration
+  # Note: telemetry provider may not be available in all distributions (e.g., rh-dev)
   telemetry:
-    serviceName: "​"
+    enabled: false  # Set to true only if the distribution supports inline::meta-reference telemetry
+    serviceName: "llama-stack"
     sinks: "console"
     otlpEndpoint: ""
 
