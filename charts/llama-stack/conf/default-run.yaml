@@ -385,7 +385,7 @@ registered_resources:
     model_type: embedding
 {{- end }}
   shields: []
-  vector_dbs:
+  vector_dbs: {{ if not .Values.vectorDbs }}[]{{ end }}
 {{- if .Values.vectorDbs }}
 {{- range $name, $vdb := .Values.vectorDbs }}
   - vector_db_id: {{ $name }}
@@ -396,8 +396,6 @@ registered_resources:
     provider_vector_db_id: {{ $vdb.providerVectorDbId }}
     {{- end }}
 {{- end }}
-{{- else }}
-  []
 {{- end }}
   datasets: []
   scoring_fns: []
