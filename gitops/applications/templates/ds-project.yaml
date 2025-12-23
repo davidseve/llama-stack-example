@@ -10,6 +10,7 @@ metadata:
   annotations:
     openshift.io/description: 'Auto-generated DataScienceProject for User: {{ .Values.user }}'
     openshift.io/display-name: {{ .Values.global.namespace }}
+    argocd.argoproj.io/sync-wave: "-100"
 spec:
   finalizers:
     - kubernetes

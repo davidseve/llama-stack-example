@@ -91,13 +91,31 @@ spec:
               key: MILVUS_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
-        # FAISS KVStore Password
+        # FAISS KVStore Password (sensitive)
         {{- if .Values.secret.data.FAISS_KVSTORE_PASSWORD }}
         - name: FAISS_KVSTORE_PASSWORD
           valueFrom:
             secretKeyRef:
               key: FAISS_KVSTORE_PASSWORD
               name: {{ .Values.global.name }}-secret
+        {{- end }}
+        # PostgreSQL Credentials (sensitive only - host/port are in run.yaml config)
+        {{- if .Values.providers.postgres.enabled }}
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
+              key: POSTGRES_PASSWORD
         {{- end }}
         # Brave Search API Key
         {{- if .Values.secret.data.BRAVE_SEARCH_API_KEY }}

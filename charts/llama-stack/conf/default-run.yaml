@@ -2,6 +2,7 @@ version: 2
 image_name: rh
 apis:
 - agents
+- batches
 - datasetio
 - eval
 - inference
@@ -86,32 +87,16 @@ providers:
     provider_type: inline::milvus
     config:
       db_path: /opt/app-root/src/.llama/distributions/rh/milvus.db
-      kvstore:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/milvus_registry.db
+      persistence:
+        backend: kv_milvus_inline
+        namespace: vector_io::milvus
 {{- if .Values.providers.faiss.enabled }}
   - provider_id: faiss
     provider_type: inline::faiss
     config:
-      kvstore:
-        type: {{ .Values.providers.faiss.kvstore.type }}
-        namespace: {{ .Values.providers.faiss.kvstore.namespace }}
-        # SQLite backend (type=sqlite)
-        db_path: {{ .Values.providers.faiss.kvstore.dbPath }}
-        # Redis, PostgreSQL, MongoDB backends (type=redis|postgres|mongodb)
-        host: {{ .Values.providers.faiss.kvstore.host }}
-        port: {{ .Values.providers.faiss.kvstore.port }}
-        # PostgreSQL, MongoDB backends (type=postgres|mongodb)
-        db: {{ .Values.providers.faiss.kvstore.db }}
-        user: {{ .Values.providers.faiss.kvstore.user }}
-        password: ${env.FAISS_KVSTORE_PASSWORD:=}
-        # PostgreSQL backend only (type=postgres)
-        ssl_mode: {{ .Values.providers.faiss.kvstore.sslMode }}
-        ca_cert_path: {{ .Values.providers.faiss.kvstore.caCertPath }}
-        table_name: {{ .Values.providers.faiss.kvstore.tableName }}
-        # MongoDB backend only (type=mongodb)
-        collection_name: {{ .Values.providers.faiss.kvstore.collectionName }}
+      persistence:
+        backend: kv_faiss
+        namespace: vector_io::faiss
 {{- end }}
 {{- if .Values.providers.milvus.enabled }}
   - provider_id: milvus-remote
@@ -134,10 +119,9 @@ providers:
       {{- if .Values.providers.milvus.clientKeyPath }}
       client_key_path: {{ .Values.providers.milvus.clientKeyPath }}
       {{- end }}
-      kvstore:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/milvus_remote_registry.db
+      persistence:
+        backend: kv_milvus_remote
+        namespace: vector_io::milvus_remote
 {{- end }}
   safety:
     - provider_id: trustyai_fms
@@ -155,13 +139,15 @@ providers:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
     config:
-      persistence_store:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/agents_store.db
-      responses_store:
-        type: sqlite
-        db_path: /opt/app-root/src/.llama/distributions/rh/responses_store.db
+      persistence:
+        agent_state:
+          backend: kv_agents
+          namespace: agents::meta_reference
+        responses:
+          backend: sql_agents
+          table_name: agents_responses
+          max_write_queue_size: 10000
+          num_writers: 4
   eval:
   - provider_id: trustyai_lmeval
     provider_type: remote::trustyai_lmeval
@@ -199,16 +185,14 @@ providers:
     provider_type: remote::huggingface
     config:
       kvstore:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/huggingface_datasetio.db
+        backend: kv_datasetio_huggingface
+        namespace: datasetio::huggingface
   - provider_id: localfs
     provider_type: inline::localfs
     config:
       kvstore:
-        type: sqlite
-        namespace: null
-        db_path: /opt/app-root/src/.llama/distributions/rh/localfs_datasetio.db
+        backend: kv_datasetio_localfs
+        namespace: datasetio::localfs
   scoring:
   - provider_id: basic
     provider_type: inline::basic
@@ -254,66 +238,182 @@ providers:
     config:
       storage_dir: /opt/app-root/src/.llama/distributions/rh/files
       metadata_store:
-        type: sqlite
-        db_path: /opt/app-root/src/.llama/distributions/rh/files_metadata.db
-metadata_store:
-  type: sqlite
-  db_path: /opt/app-root/src/.llama/distributions/rh/registry.db
-inference_store:
-  type: sqlite
-  db_path: /opt/app-root/src/.llama/distributions/rh/inference_store.db
-models:
+        backend: sql_files
+        table_name: files_metadata
+{{- if .Values.providers.s3.enabled }}
+  - provider_id: s3
+    provider_type: remote::s3
+    config:
+      bucket_name: {{ .Values.providers.s3.bucketName | quote }}
+      region: {{ .Values.providers.s3.region | default "us-east-1" | quote }}
+      aws_access_key_id: ${env.AWS_ACCESS_KEY_ID:=}
+      aws_secret_access_key: ${env.AWS_SECRET_ACCESS_KEY:=}
+      {{- if .Values.providers.s3.endpointUrl }}
+      endpoint_url: {{ .Values.providers.s3.endpointUrl | quote }}
+      {{- end }}
+      auto_create_bucket: {{ .Values.providers.s3.autoCreateBucket | default false }}
+      metadata_store:
+        backend: sql_files
+        table_name: files_metadata
+{{- end }}
+  batches:
+  - provider_id: reference
+    provider_type: inline::reference
+    config:
+      kvstore:
+        namespace: batches
+        backend: kv_default
+storage:
+  backends:
+    # KV Stores using SQLite (persisted via PVC) - for non-critical metadata
+    kv_default:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/kvstore.db
+    kv_agents:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/agents_store.db
+    kv_faiss:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/faiss.db
+    kv_datasetio_huggingface:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/huggingface_datasetio.db
+    kv_datasetio_localfs:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/localfs_datasetio.db
+    # Milvus inline registry (local Milvus - SQLite is fine)
+    kv_milvus_inline:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/milvus_inline_registry.db
+    # Milvus remote registry - critical for vector_store persistence
+{{- if .Values.providers.postgres.enabled }}
+    kv_milvus_remote:
+      type: kv_postgres
+      host: {{ .Values.providers.postgres.host | default "postgres.llamastack.svc.cluster.local" }}
+      port: {{ .Values.providers.postgres.port | default "5432" }}
+      database: ${env.POSTGRES_DB:=llamastack}
+      user: ${env.POSTGRES_USER:=llamastack}
+      password: ${env.POSTGRES_PASSWORD:=llamastack}
+      table_name: kv_milvus_remote
+{{- else }}
+    kv_milvus_remote:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/milvus_remote_registry.db
+{{- end }}
+{{- if .Values.providers.postgres.enabled }}
+    sql_inference:
+      type: sql_postgres
+      host: {{ .Values.providers.postgres.host | default "postgres.llamastack.svc.cluster.local" }}
+      port: {{ .Values.providers.postgres.port | default "5432" }}
+      database: ${env.POSTGRES_DB:=llamastack}
+      user: ${env.POSTGRES_USER:=llamastack}
+      password: ${env.POSTGRES_PASSWORD:=llamastack}
+    sql_agents:
+      type: sql_postgres
+      host: {{ .Values.providers.postgres.host | default "postgres.llamastack.svc.cluster.local" }}
+      port: {{ .Values.providers.postgres.port | default "5432" }}
+      database: ${env.POSTGRES_DB:=llamastack}
+      user: ${env.POSTGRES_USER:=llamastack}
+      password: ${env.POSTGRES_PASSWORD:=llamastack}
+    sql_files:
+      type: sql_postgres
+      host: {{ .Values.providers.postgres.host | default "postgres.llamastack.svc.cluster.local" }}
+      port: {{ .Values.providers.postgres.port | default "5432" }}
+      database: ${env.POSTGRES_DB:=llamastack}
+      user: ${env.POSTGRES_USER:=llamastack}
+      password: ${env.POSTGRES_PASSWORD:=llamastack}
+    sql_default:
+      type: sql_postgres
+      host: {{ .Values.providers.postgres.host | default "postgres.llamastack.svc.cluster.local" }}
+      port: {{ .Values.providers.postgres.port | default "5432" }}
+      database: ${env.POSTGRES_DB:=llamastack}
+      user: ${env.POSTGRES_USER:=llamastack}
+      password: ${env.POSTGRES_PASSWORD:=llamastack}
+{{- else }}
+    sql_inference:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/inference_store.db
+    sql_agents:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/agents_responses.db
+    sql_files:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/files_metadata.db
+    sql_default:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/default_store.db
+{{- end }}
+  stores:
+    metadata:
+      backend: kv_default
+      namespace: registry
+    inference:
+      backend: sql_inference
+      table_name: inference_store
+      max_write_queue_size: 10000
+      num_writers: 4
+    conversations:
+      backend: sql_default
+      table_name: openai_conversations
+    prompts:
+      namespace: prompts
+      backend: kv_default
+registered_resources:
+  models:
 {{- range $name, $vllm := .Values.providers.vllm }}
-- metadata: {}
-  model_id: {{ $vllm.modelId }}
-  provider_id: {{ $name }}-vllm-inference
-  {{- if $vllm.providerModelId }}
-  provider_model_id: {{ $vllm.providerModelId }}
-  {{- end }}
-  model_type: llm
+  - metadata: {}
+    model_id: {{ $vllm.modelId }}
+    provider_id: {{ $name }}-vllm-inference
+    {{- if $vllm.providerModelId }}
+    provider_model_id: {{ $vllm.providerModelId }}
+    {{- end }}
+    model_type: llm
 {{- end }}
 {{- if .Values.providers.sentenceTransformers.enabled }}
-- metadata:
-    embedding_dimension: {{ .Values.providers.sentenceTransformers.embeddingDimension }}
-  model_id: {{ .Values.providers.sentenceTransformers.modelId }}
-  provider_id: sentence-transformers
-  provider_model_id: {{ .Values.providers.sentenceTransformers.providerModelId }}
-  model_type: embedding
+  - metadata:
+      embedding_dimension: {{ .Values.providers.sentenceTransformers.embeddingDimension }}
+    model_id: {{ .Values.providers.sentenceTransformers.modelId }}
+    provider_id: sentence-transformers
+    provider_model_id: {{ .Values.providers.sentenceTransformers.providerModelId }}
+    model_type: embedding
 {{- end }}
 {{- range $name, $embed := .Values.providers.vllmEmbedding }}
-- metadata:
-    embedding_dimension: {{ $embed.embeddingDimension }}
-  model_id: {{ $embed.modelId }}
-  provider_id: {{ $name }}-vllm-embedding
-  model_type: embedding
+  - metadata:
+      embedding_dimension: {{ $embed.embeddingDimension }}
+    model_id: {{ $embed.modelId }}
+    provider_id: {{ $name }}-vllm-embedding
+    model_type: embedding
 {{- end }}
-shields: []
-vector_dbs:
+  shields: []
+  vector_dbs:
 {{- if .Values.vectorDbs }}
 {{- range $name, $vdb := .Values.vectorDbs }}
-- vector_db_id: {{ $name }}
-  embedding_model: {{ $vdb.embeddingModel }}
-  embedding_dimension: {{ $vdb.embeddingDimension }}
-  provider_id: {{ $vdb.providerId }}
-  {{- if $vdb.providerVectorDbId }}
-  provider_vector_db_id: {{ $vdb.providerVectorDbId }}
-  {{- end }}
+  - vector_db_id: {{ $name }}
+    embedding_model: {{ $vdb.embeddingModel }}
+    embedding_dimension: {{ $vdb.embeddingDimension }}
+    provider_id: {{ $vdb.providerId }}
+    {{- if $vdb.providerVectorDbId }}
+    provider_vector_db_id: {{ $vdb.providerVectorDbId }}
+    {{- end }}
 {{- end }}
-{{- else }} []
+{{- else }}
+  []
 {{- end }}
-datasets: []
-scoring_fns: []
-benchmarks: []
-tool_groups:
-- toolgroup_id: builtin::websearch
-  provider_id: tavily-search
-- toolgroup_id: builtin::rag
-  provider_id: rag-runtime
+  datasets: []
+  scoring_fns: []
+  benchmarks: []
+  tool_groups:
+  - toolgroup_id: builtin::websearch
+    provider_id: tavily-search
+  - toolgroup_id: builtin::rag
+    provider_id: rag-runtime
 {{- range $name, $mcp := .Values.mcpServers }}
-- toolgroup_id: mcp::{{ $name }}
-  provider_id: model-context-protocol
-  mcp_endpoint:
-    uri: {{ $mcp.uri }}
+  - toolgroup_id: mcp::{{ $name }}
+    provider_id: model-context-protocol
+    mcp_endpoint:
+      uri: {{ $mcp.uri }}
 {{- end }}
+telemetry:
+  enabled: true
 server:
   port: {{ .Values.server.containerSpec.port }}

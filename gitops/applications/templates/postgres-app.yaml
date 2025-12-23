@@ -17,7 +17,7 @@ metadata:
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: llamastack
+    namespace: {{ .Values.global.namespace }}
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
