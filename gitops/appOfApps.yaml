@@ -21,13 +21,13 @@ spec:
             enabled: true
         
           discounts:
-            enabled: false
+            enabled: true
           
           inference:
             enabled: false
           
           kubernetesMcp:
-            enabled: false
+            enabled: true
           
           llamaStack:
             enabled: true
