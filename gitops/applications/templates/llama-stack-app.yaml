@@ -21,6 +21,13 @@ spec:
       - ../../gitops/values-common.yaml
       - ../../gitops/llama-stack-values.yaml
       values: |
+        providers:
+          kubeflow:
+            enabled: {{ .Values.providers.kubeflow.enabled | default false }}
+            # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
+            {{- if .Values.providers.kubeflow.llamaStackUrl }}
+            llamaStackUrl: {{ .Values.providers.kubeflow.llamaStackUrl | quote }}
+            {{- end }}
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: {{ .Values.secret.data.LLAMA_4_SCOUT_API_TOKEN | default "" | quote }}

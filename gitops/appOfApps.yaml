@@ -15,7 +15,41 @@ spec:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
     helm:
-      values: |
+      values: |  
+        applications:
+          rhoai:
+            enabled: true
+        
+          discounts:
+            enabled: false
+          
+          inference:
+            enabled: false
+          
+          kubernetesMcp:
+            enabled: false
+          
+          llamaStack:
+            enabled: true
+        
+          milvus:
+            enabled: true
+        
+          minio:
+            enabled: true
+        
+          postgres:
+            enabled: false
+        
+          dspa:
+            enabled: true
+        
+        providers:
+          kubeflow:
+            enabled: false
+            # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
+            llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox1467.opentlc.com"
+        
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}
