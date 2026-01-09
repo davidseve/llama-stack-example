@@ -46,7 +46,7 @@ spec:
         
         providers:
           kubeflow:
-            enabled: false
+            enabled: true
             # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
             llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox1467.opentlc.com"
         

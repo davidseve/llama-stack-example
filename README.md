@@ -6,8 +6,7 @@ Examples demonstrating Llama Stack capabilities on Red Hat OpenShift AI.
 
 | Component | Version | Description |
 |-----------|---------|-------------|
-| **OpenShift Container Platform** | 4.20+ | Kubernetes distribution for enterprise |
-| **Red Hat OpenShift AI** | 3.0+ | AI/ML platform with model serving capabilities |
+| **OpenShift Container Platform** | 4.19+ | Kubernetes distribution for enterprise |
 | **OpenShift GitOps** | - | GitOps continuous delivery (for automated deployment) |
 | **Python** | 3.11+ | Required for running the example scripts |
 
