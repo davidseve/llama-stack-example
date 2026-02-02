@@ -11,6 +11,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXAMPLES_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Activate virtual environment if it exists
+if [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
+    source "$SCRIPT_DIR/.venv/bin/activate"
+fi
+
 # Load configuration from examples/.env
 if [ -f "$EXAMPLES_DIR/.env" ]; then
     echo "📝 Loading configuration from examples/.env..."

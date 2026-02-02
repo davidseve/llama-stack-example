@@ -1,8 +1,9 @@
 # Llama Stack Agent Chatbot Requirements
 
 # Core Llama Stack dependencies
-llama-stack-client>=0.3.3
-llama-stack
+# Pinned to match server version 0.3.0rc3+rhai0
+llama-stack-client==0.3.3
+llama-stack==0.3.3
 
 # OpenAI-compatible client (required for vector stores API in v0.3.3+)
 openai
