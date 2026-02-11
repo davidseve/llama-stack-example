@@ -13,7 +13,7 @@ spec:
   source: 
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: remote-kubernetes-mcp
+    targetRevision: HEAD
     helm:
       values: |  
         applications:
