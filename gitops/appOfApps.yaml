@@ -32,7 +32,7 @@ spec:
           minio:
             enabled: true
           postgres:
-            enabled: false 
+            enabled: true 
           dspa:
             enabled: true
         providers:
