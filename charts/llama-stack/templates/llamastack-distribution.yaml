@@ -151,10 +151,10 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      {{- if .Values.server.distribution.image }}
+      {{- if and .Values.server .Values.server.distribution .Values.server.distribution.image }}
       image: {{ .Values.server.distribution.image }}
       {{- else }}
-      name: {{ .Values.server.distribution.name | default "rh-dev" }}
+      name: {{ (.Values.server.distribution).name | default "rh-dev" }}
       {{- end }}
    {{- if .Values.config.enable }}
     userConfig:

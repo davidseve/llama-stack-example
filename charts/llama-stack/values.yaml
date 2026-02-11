@@ -62,7 +62,7 @@ server:
         memory: 500Mi
 
   # Distribution configuration
-  # distribution:
+  distribution: {}
   #   image: quay.io/opendatahub/llama-stack:odh
 
   # Storage configuration
