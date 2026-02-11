@@ -20,7 +20,7 @@ spec:
     namespace: llamastack
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: remote-kubernetes-mcp
     path: charts/postgress
   project: default
   syncPolicy:
