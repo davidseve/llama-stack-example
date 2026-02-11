@@ -151,9 +151,12 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      {{- $image := dig "server" "distribution" "image" "" .Values }}
-      {{- if $image }}
-      image: {{ $image }}
+      {{- $distImage := "" }}
+      {{- if hasKey .Values.server "distribution" }}
+        {{- $distImage = .Values.server.distribution.image | default "" }}
+      {{- end }}
+      {{- if $distImage }}
+      image: {{ $distImage }}
       {{- else }}
       name: rh-dev
       {{- end }}
