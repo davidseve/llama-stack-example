@@ -44,18 +44,23 @@ spec:
               npm install -g kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}
               
               echo "🎯 Starting MCP Server..."
-              echo "   - SSE Port: {{ .Values.mcpServer.ssePort }}"
+              echo "   - Port: {{ .Values.mcpServer.ssePort }}"
               echo "   - MCP Port: {{ .Values.mcpServer.port }}"
-              echo "   - SSE Endpoint: http://localhost:{{ .Values.mcpServer.ssePort }}/sse"
+              echo "   - Transport: Streamable HTTP at /mcp"
+              echo "   - Health: /healthz"
               
               # Handle signals properly
               trap 'echo "Shutting down MCP Server..."; exit 0' SIGTERM SIGINT
               
-              # Start the server in background and wait for it
+              # Start supergateway with Streamable HTTP transport (not SSE).
+              # SSE mode only supports ONE connection and crashes on reconnect;
+              # Streamable HTTP is the modern MCP transport and fully supports
+              # multiple concurrent clients.
               npx -y supergateway \
-                --stdio "kubernetes-mcp-server {{ join " " .Values.mcpServer.args }}" \
+                --stdio "kubernetes-mcp-server {{ if .Values.kubeconfigSecret }}--kubeconfig /etc/mcp/{{ .Values.kubeconfigSecretKey | default "kubeconfig" }} {{ end }}{{ join " " .Values.mcpServer.args }}" \
+                --outputTransport streamableHttp \
                 --port {{ .Values.mcpServer.ssePort }} \
-                --mcp-port {{ .Values.mcpServer.port }} &
+                --healthEndpoint /healthz &
               
               # Wait for background process
               SERVER_PID=$!
@@ -76,23 +81,54 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-          {{- if .Values.livenessProbe }}
           livenessProbe:
+          {{- if .Values.livenessProbe }}
             {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- else }}
+            httpGet:
+              path: /healthz
+              port: sse-port
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
           {{- end }}
-          {{- if .Values.readinessProbe }}
           readinessProbe:
+          {{- if .Values.readinessProbe }}
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- else }}
+            httpGet:
+              path: /healthz
+              port: sse-port
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMounts }}
+          {{- if or .Values.kubeconfigSecret .Values.volumeMounts }}
           volumeMounts:
+            {{- if .Values.kubeconfigSecret }}
+            - name: mcp-kubeconfig
+              mountPath: /etc/mcp
+              readOnly: true
+            {{- end }}
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
-      {{- with .Values.volumes }}
+      {{- if or .Values.kubeconfigSecret .Values.volumes }}
       volumes:
+        {{- if .Values.kubeconfigSecret }}
+        - name: mcp-kubeconfig
+          secret:
+            secretName: {{ .Values.kubeconfigSecret }}
+            optional: true
+        {{- end }}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

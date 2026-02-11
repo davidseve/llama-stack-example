@@ -1,0 +1,12 @@
+# Override for the mcp-remote-access example.
+# Security context is empty (OpenShift SCC assigns UID/GID automatically).
+global:
+  namespace: llama-stack-example
+
+rbac:
+  clusterRole: mcp-no-permissions
+
+kubeconfigSecret: kubernetes-mcp-server-kubeconfig
+openshift:
+  route:
+    enabled: true

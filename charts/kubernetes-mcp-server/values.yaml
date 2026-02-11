@@ -24,8 +24,13 @@ serviceAccount:
   name: "kubernetes-mcp-server"
 
 rbac:
+  # Use "mcp-no-permissions" for mcp-remote-access example (apply that ClusterRole first).
   clusterRole: "cluster-admin"
-  
+
+# Kubeconfig for MCP to use remote/specific cluster (optional). When set, volume is mounted and --kubeconfig is passed.
+# kubeconfigSecret: ""
+# kubeconfigSecretKey: "kubeconfig"
+
 # OpenShift specific configuration
 openshift:
   route:
@@ -47,20 +52,11 @@ resources:
     cpu: 100m
     memory: 128Mi
 
-# Security context for OpenShift
-podSecurityContext:
-  fsGroup: 1001
-  runAsNonRoot: true
-  runAsUser: 1001
+# Security context — empty by default; OpenShift SCC assigns UID/GID automatically.
+# Override only if you need a specific UID (e.g. vanilla Kubernetes).
+podSecurityContext: {}
 
-securityContext:
-  allowPrivilegeEscalation: false
-  capabilities:
-    drop:
-    - ALL
-  readOnlyRootFilesystem: false
-  runAsNonRoot: true
-  runAsUser: 1001
+securityContext: {}
 
 # MCP Server configuration
 mcpServer:
@@ -101,17 +97,20 @@ ingress:
 
 
 
+# Default probes use /healthz (provided by supergateway --healthEndpoint /healthz).
+# IMPORTANT: Do NOT probe /sse — supergateway only supports ONE SSE connection.
+# Override only if you know what you're doing:
 # livenessProbe:
-#   tcpSocket:
+#   httpGet:
+#     path: /healthz
 #     port: sse-port
 #   initialDelaySeconds: 30
-#   periodSeconds: 10
+#   periodSeconds: 15
 #   timeoutSeconds: 5
 #   failureThreshold: 3
-
 # readinessProbe:
 #   httpGet:
-#     path: /sse
+#     path: /healthz
 #     port: sse-port
 #   initialDelaySeconds: 15
 #   periodSeconds: 10
