@@ -109,12 +109,30 @@ providers:
   - provider_id: model-context-protocol-kubernetes
     provider_type: remote::model-context-protocol
     config: {}
-metadata_store:
-  type: sqlite
-  db_path: /opt/app-root/src/.llama/distributions/rh/registry.db
-inference_store:
-  type: sqlite
-  db_path: /opt/app-root/src/.llama/distributions/rh/inference_store.db
+storage:
+  backends:
+    kv_default:
+      type: kv_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/kvstore.db
+    sql_default:
+      type: sql_sqlite
+      db_path: /opt/app-root/src/.llama/distributions/rh/sql_store.db
+  stores:
+    metadata:
+      namespace: registry
+      backend: kv_default
+    inference:
+      table_name: inference_store
+      backend: sql_default
+    conversations:
+      table_name: openai_conversations
+      backend: sql_default
+    prompts:
+      namespace: prompts
+      backend: kv_default
+    connectors:
+      namespace: connectors
+      backend: kv_default
 models:
 - metadata: {}
   model_id: ${env.INFERENCE_MODEL}

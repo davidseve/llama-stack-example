@@ -19,7 +19,13 @@ providers:
     embeddingModel: "granite-embedding-125m"
     defaultMaxTokens: "2048"
     defaultTemperature: "0.1"
+  postgres:
+    enabled: true
+    host: "postgres.llama-stack-ai2.svc.cluster.local"
+    port: "5432"
+    secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
+   
   # Kubeflow/DSPA configuration for ragas-remote
   # Ref: https://github.com/opendatahub-io/llama-stack-provider-ragas/blob/main/demos/llama-stack-openshift/README.md
   kubeflow:

@@ -147,18 +147,6 @@ providers:
   # FAISS configuration
   faiss:
     enabled: false
-    kvstore:
-      type: "sqlite"
-      namespace: ""
-      dbPath: ""
-      host: ""
-      port: ""
-      db: ""
-      user: ""
-      sslMode: ""
-      caCertPath: ""
-      tableName: ""
-      collectionName: ""
 
   # FMS Safety configuration
   fms:

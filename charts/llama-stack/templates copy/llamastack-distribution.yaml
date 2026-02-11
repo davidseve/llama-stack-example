@@ -91,31 +91,13 @@ spec:
               key: MILVUS_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
-        # FAISS KVStore Password (sensitive)
+        # FAISS KVStore Password
         {{- if .Values.secret.data.FAISS_KVSTORE_PASSWORD }}
         - name: FAISS_KVSTORE_PASSWORD
           valueFrom:
             secretKeyRef:
               key: FAISS_KVSTORE_PASSWORD
               name: {{ .Values.global.name }}-secret
-        {{- end }}
-        # PostgreSQL Credentials (sensitive only - host/port are in run.yaml config)
-        {{- if .Values.providers.postgres.enabled }}
-        - name: POSTGRES_DB
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
-              key: POSTGRES_DB
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.providers.postgres.secretName | default "postgres-secret" }}
-              key: POSTGRES_PASSWORD
         {{- end }}
         # Brave Search API Key
         {{- if .Values.secret.data.BRAVE_SEARCH_API_KEY }}
@@ -151,11 +133,7 @@ spec:
           cpu: {{ .Values.server.containerSpec.resources.requests.cpu | quote }}
           memory: {{ .Values.server.containerSpec.resources.requests.memory | quote }}
     distribution:
-      {{- if .Values.server.distribution.image }}
-      image: {{ .Values.server.distribution.image }}
-      {{- else }}
-      name: {{ .Values.server.distribution.name | default "rh-dev" }}
-      {{- end }}
+      name: rh-dev
    {{- if .Values.config.enable }}
     userConfig:
       configMapName: {{ .Values.global.name }}-config
