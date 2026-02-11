@@ -22,6 +22,9 @@ spec:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: remote-kubernetes-mcp
     path: charts/postgress
+    helm:
+      valueFiles:
+      - ../../gitops/values-common.yaml
   project: default
   syncPolicy:
     automated:

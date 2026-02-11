@@ -1,5 +1,2 @@
-global:
-  namespace: llama-stack-ai2
-
 postgres:
   image: harbor.apps.ai2-es-dev.pcore.work.eu-aws-02.nextgen.igrupobbva/olm-4.19/rhel9/postgresql-15:latest
