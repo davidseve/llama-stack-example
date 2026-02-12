@@ -13,6 +13,8 @@ project:
   autocreate: true
 route:
   enable: true
+  timeout: "300s"  # HAProxy idle timeout - increase for long-running LLM + MCP tool calls
+  annotations: {}  # Additional route annotations (e.g., rate limiting)
 
 # ConfigMap configuration
 config:

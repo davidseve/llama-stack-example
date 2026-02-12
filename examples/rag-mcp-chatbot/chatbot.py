@@ -74,13 +74,21 @@ Execute ALL necessary tools before providing your final answer. Do not just desc
                             break
                 
                 if mcp_url:
-                    self.tools.append({
-                        "type": "mcp",
-                        "server_label": "openshift",
-                        "server_url": mcp_url
-                    })
-                    tools = self.client.tools.list(toolgroup_id="mcp::openshift")
-                    print(f"✅ MCP OpenShift: {len(tools)} tools available")
+                    # Validate MCP connectivity BEFORE adding the tool
+                    # If we can't list tools, the server won't be able to reach
+                    # the MCP endpoint either, causing a 502 on responses.create()
+                    try:
+                        tools = self.client.tools.list(toolgroup_id="mcp::openshift")
+                        self.tools.append({
+                            "type": "mcp",
+                            "server_label": "openshift",
+                            "server_url": mcp_url
+                        })
+                        print(f"✅ MCP OpenShift: {len(tools)} tools available")
+                    except Exception as e:
+                        print(f"⚠️  MCP server unreachable at {mcp_url}, skipping MCP tools: {e}")
+            else:
+                print("ℹ️  No MCP toolgroup 'mcp::openshift' registered")
                     
         except Exception as e:
             print(f"⚠️  MCP setup error: {e}")
@@ -99,52 +107,84 @@ Execute ALL necessary tools before providing your final answer. Do not just desc
     
     def chat(self, message: str):
         """
-        Send a message and get a response.
+        Send a message and get a response using streaming.
+        
+        Streaming keeps the connection alive with SSE events, which prevents
+        the OpenShift route / HAProxy from timing out with a 504 during
+        long-running tool executions (MCP + RAG + LLM inference).
         
         The Responses API handles tool execution internally:
         1. LLM decides which tools to call
         2. Tools are executed automatically
         3. LLM generates final response with tool results
-        
-        All in a single API call - no manual loop needed.
         """
         try:
             print(f"\n🧠 Processing: '{message}'")
             print(f"🛠️  Tools: {len(self.tools)}")
             print("=" * 60)
             
-            # Single call - API handles tool execution internally
-            response = self.client.responses.create(
+            # Use streaming to keep the connection alive and avoid 504 gateway timeouts.
+            # The OpenShift route has a default 30s idle timeout; streaming sends events
+            # continuously so the connection never goes idle.
+            stream = self.client.responses.create(
                 model=self.model_id,
                 input=message,
                 instructions=self.instructions,
                 tools=self.tools if self.tools else None,
                 include=["file_search_call.results"],
                 max_infer_iters=10,  # Allow multiple tool iterations
+                stream=True,
             )
             
-            # Process and display results
+            # Collect streaming events
             tool_results = []
+            output_text_parts = []
+            final_response = None
             
-            if hasattr(response, 'output') and isinstance(response.output, list):
-                for item in response.output:
-                    item_type = str(getattr(item, 'type', '')).lower()
-                    
-                    # MCP tool calls
-                    if 'mcp' in item_type or hasattr(item, 'server_label'):
-                        tool_name = getattr(item, 'name', 'mcp_tool')
-                        print(f"   🔧 MCP: {tool_name}")
-                        if hasattr(item, 'output'):
-                            tool_results.append({"tool": tool_name, "result": item.output})
-                    
-                    # file_search calls
-                    if hasattr(item, 'results') and isinstance(item.results, list):
-                        print(f"   📄 RAG: {len(item.results)} documents retrieved")
-                        for result in item.results:
-                            if hasattr(result, 'text') and result.text:
-                                tool_results.append({"tool": "file_search", "result": result.text})
+            for event in stream:
+                event_type = getattr(event, 'type', '')
+                
+                # Completed response - extract full output items
+                if event_type == 'response.completed':
+                    final_response = getattr(event, 'response', None)
+                    if final_response and hasattr(final_response, 'output'):
+                        for item in final_response.output:
+                            item_type = str(getattr(item, 'type', '')).lower()
+                            
+                            # MCP tool calls
+                            if 'mcp' in item_type or hasattr(item, 'server_label'):
+                                tool_name = getattr(item, 'name', 'mcp_tool')
+                                print(f"   🔧 MCP: {tool_name}")
+                                if hasattr(item, 'output'):
+                                    tool_results.append({"tool": tool_name, "result": item.output})
+                            
+                            # file_search calls
+                            if hasattr(item, 'results') and isinstance(item.results, list):
+                                print(f"   📄 RAG: {len(item.results)} documents retrieved")
+                                for result in item.results:
+                                    if hasattr(result, 'text') and result.text:
+                                        tool_results.append({"tool": "file_search", "result": result.text})
+                
+                # Collect text deltas for the final output
+                elif event_type == 'response.output_text.delta':
+                    delta = getattr(event, 'delta', '')
+                    if delta:
+                        output_text_parts.append(delta)
+                
+                # Log tool-related streaming events for visibility
+                elif event_type == 'response.mcp_call.in_progress':
+                    name = getattr(event, 'name', '')
+                    print(f"   ⏳ MCP calling: {name}...")
+                elif event_type == 'response.file_search_call.in_progress':
+                    print(f"   ⏳ RAG searching...")
             
-            output_text = getattr(response, "output_text", None) or str(response)
+            # Build final output text
+            if output_text_parts:
+                output_text = ''.join(output_text_parts)
+            elif final_response:
+                output_text = getattr(final_response, 'output_text', None) or str(final_response)
+            else:
+                output_text = "(no response received)"
             
             # Summary
             print("\n" + "="*60)
@@ -155,7 +195,7 @@ Execute ALL necessary tools before providing your final answer. Do not just desc
             
             print(f"\n💬 Response:\n{output_text}")
             
-            return response
+            return final_response
             
         except Exception as e:
             print(f"❌ Error: {str(e)}")

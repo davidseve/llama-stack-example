@@ -32,8 +32,56 @@ REMOTE_BASE_URL="${REMOTE_BASE_URL:-http://localhost:8321}"
 INFERENCE_MODEL_ID="${INFERENCE_MODEL_ID:-granite32-8b}"
 EMBEDDING_MODEL="${EMBEDDING_MODEL:-granite-embedding-125m}"
 DOCUMENTS_DIR="${MCP_DOCUMENTS_DIR:-${DOCUMENTS_DIR:-documents}}"
+VERIFY_SSL="${VERIFY_SSL:-false}"
 # Use MCP-specific vector store ID
 VECTOR_STORE_ID="${MCP_VECTOR_STORE_ID:-${VECTOR_STORE_ID:-}}"
+
+# ============================================================================
+# Helper: Validate vector store exists on the server
+# ============================================================================
+validate_vector_store() {
+    local vs_id="$1"
+    local url="$2"
+    local ssl_flag=""
+    if [ "$VERIFY_SSL" != "true" ]; then
+        ssl_flag="--insecure"
+    fi
+
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" $ssl_flag \
+        "${url}/v1/vector_stores/${vs_id}" 2>/dev/null) || true
+
+    if [ "$http_code" = "200" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Helper: Update or add a key in .env without creating duplicates
+update_env_key() {
+    local key="$1"
+    local value="$2"
+    local env_file="$3"
+
+    if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+    else
+        echo "${key}=${value}" >> "$env_file"
+    fi
+}
+
+# Validate vector store if one is configured
+if [ -n "$VECTOR_STORE_ID" ]; then
+    echo "🔍 Validating existing vector store: $VECTOR_STORE_ID ..."
+    if validate_vector_store "$VECTOR_STORE_ID" "$REMOTE_BASE_URL"; then
+        echo "✅ Vector store exists on the server"
+    else
+        echo "⚠️  Vector store $VECTOR_STORE_ID not found on server (stale ID)"
+        echo "   Will create a new vector store..."
+        VECTOR_STORE_ID=""
+    fi
+fi
 
 echo "======================================================================"
 echo "LLAMA STACK CHATBOT - RAG + MCP"
@@ -79,8 +127,8 @@ if [ -z "$VECTOR_STORE_ID" ]; then
         exit 1
     fi
     
-    # Save to shared .env for future runs
-    echo "MCP_VECTOR_STORE_ID=$VECTOR_STORE_ID" >> "$EXAMPLES_DIR/.env"
+    # Save to shared .env for future runs (update in-place, no duplicates)
+    update_env_key "MCP_VECTOR_STORE_ID" "$VECTOR_STORE_ID" "$EXAMPLES_DIR/.env"
     export VECTOR_STORE_ID
     
     echo ""

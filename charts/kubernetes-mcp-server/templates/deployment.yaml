@@ -43,22 +43,26 @@ spec:
               echo "🔧 Installing kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}..."
               npm install -g kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}
               
+              {{- $transport := .Values.mcpServer.transport | default "sse" }}
+              {{- $endpoint := ternary "/sse" "/mcp" (eq $transport "sse") }}
               echo "🎯 Starting MCP Server..."
               echo "   - Port: {{ .Values.mcpServer.ssePort }}"
-              echo "   - MCP Port: {{ .Values.mcpServer.port }}"
-              echo "   - Transport: Streamable HTTP at /mcp"
+              echo "   - Transport: {{ $transport }} at {{ $endpoint }}"
               echo "   - Health: /healthz"
               
               # Handle signals properly
               trap 'echo "Shutting down MCP Server..."; exit 0' SIGTERM SIGINT
               
-              # Start supergateway with Streamable HTTP transport (not SSE).
-              # SSE mode only supports ONE connection and crashes on reconnect;
-              # Streamable HTTP is the modern MCP transport and fully supports
-              # multiple concurrent clients.
+              # Transport modes:
+              # - sse: Uses /sse endpoint with persistent SSE connections. Works
+              #   reliably with Llama Stack (keeps connection alive during tool
+              #   execution). Limited to ONE concurrent connection (supergateway).
+              # - streamableHttp: Uses /mcp endpoint with standard HTTP. Supports
+              #   multiple concurrent clients but may cause idle timeout issues
+              #   when Llama Stack goes silent during tool execution.
               npx -y supergateway \
                 --stdio "kubernetes-mcp-server {{ if .Values.kubeconfigSecret }}--kubeconfig /etc/mcp/{{ .Values.kubeconfigSecretKey | default "kubeconfig" }} {{ end }}{{ join " " .Values.mcpServer.args }}" \
-                --outputTransport streamableHttp \
+                --outputTransport {{ $transport }} \
                 --port {{ .Values.mcpServer.ssePort }} \
                 --healthEndpoint /healthz &
               
