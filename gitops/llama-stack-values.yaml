@@ -16,7 +16,7 @@ providers:
   
   # RAGAS Provider for RAG evaluation metrics
   ragas:
-    embeddingModel: "granite-embedding-125m"
+    embeddingModel: "sentence-transformers/ibm-granite/granite-embedding-125m-english"
     defaultMaxTokens: "2048"
     defaultTemperature: "0.1"
   postgres:
