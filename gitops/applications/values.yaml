@@ -22,7 +22,7 @@ applications:
     enabled: true
 
   postgres:
-    enabled: false
+    enabled: true
 
   dspa:
     enabled: true

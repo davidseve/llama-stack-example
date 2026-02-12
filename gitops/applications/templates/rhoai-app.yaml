@@ -11,7 +11,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   destination:
-    namespace: openshift-gitops
+    namespace: {{ .Values.global.namespace }}
     server: 'https://kubernetes.default.svc'
   project: default
   source: 
@@ -20,7 +20,7 @@ spec:
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../../gitops/values-common.yaml
+      - ../values-common.yaml
   syncPolicy:
     automated:
       prune: true
