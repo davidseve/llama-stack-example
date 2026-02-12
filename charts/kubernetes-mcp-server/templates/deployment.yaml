@@ -43,28 +43,20 @@ spec:
               echo "🔧 Installing kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}..."
               npm install -g kubernetes-mcp-server@{{ .Values.mcpServer.packageVersion }}
               
-              {{- $transport := .Values.mcpServer.transport | default "sse" }}
-              {{- $endpoint := ternary "/sse" "/mcp" (eq $transport "sse") }}
               echo "🎯 Starting MCP Server..."
-              echo "   - Port: {{ .Values.mcpServer.ssePort }}"
-              echo "   - Transport: {{ $transport }} at {{ $endpoint }}"
-              echo "   - Health: /healthz"
+              echo "   - SSE Port: {{ .Values.mcpServer.ssePort }}"
+              echo "   - MCP Port: {{ .Values.mcpServer.port }}"
+              echo "   - SSE Endpoint: http://localhost:{{ .Values.mcpServer.ssePort }}/sse"
               
               # Handle signals properly
               trap 'echo "Shutting down MCP Server..."; exit 0' SIGTERM SIGINT
               
-              # Transport modes:
-              # - sse: Uses /sse endpoint with persistent SSE connections. Works
-              #   reliably with Llama Stack (keeps connection alive during tool
-              #   execution). Limited to ONE concurrent connection (supergateway).
-              # - streamableHttp: Uses /mcp endpoint with standard HTTP. Supports
-              #   multiple concurrent clients but may cause idle timeout issues
-              #   when Llama Stack goes silent during tool execution.
+              # Start supergateway with default SSE transport + --mcp-port.
+              # This exposes SSE at /sse on ssePort and MCP on mcp-port.
               npx -y supergateway \
                 --stdio "kubernetes-mcp-server {{ if .Values.kubeconfigSecret }}--kubeconfig /etc/mcp/{{ .Values.kubeconfigSecretKey | default "kubeconfig" }} {{ end }}{{ join " " .Values.mcpServer.args }}" \
-                --outputTransport {{ $transport }} \
                 --port {{ .Values.mcpServer.ssePort }} \
-                --healthEndpoint /healthz &
+                --mcp-port {{ .Values.mcpServer.port }} &
               
               # Wait for background process
               SERVER_PID=$!
@@ -85,29 +77,13 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-          livenessProbe:
           {{- if .Values.livenessProbe }}
+          livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
-          {{- else }}
-            httpGet:
-              path: /healthz
-              port: sse-port
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 3
           {{- end }}
-          readinessProbe:
           {{- if .Values.readinessProbe }}
+          readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- else }}
-            httpGet:
-              path: /healthz
-              port: sse-port
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

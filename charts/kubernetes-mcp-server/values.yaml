@@ -66,13 +66,6 @@ mcpServer:
   ssePort: 8080
   # Node.js package version
   packageVersion: "latest"
-  # Transport mode: "sse" or "streamableHttp"
-  # - sse: Uses /sse endpoint, persistent SSE connection. Works reliably with
-  #   Llama Stack but only supports ONE concurrent connection (supergateway limitation).
-  # - streamableHttp: Uses /mcp endpoint, modern MCP transport, supports multiple
-  #   concurrent clients. May cause idle timeout issues with Llama Stack because
-  #   individual HTTP requests create gaps where no SSE events flow to the client.
-  transport: "sse"
   # Environment variables
   env: {}
   # Additional command line arguments
