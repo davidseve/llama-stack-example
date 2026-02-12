@@ -6,32 +6,7 @@
 global:
   namespace: llama-stack-example
 
-replicaCount: 1
-
-image:
-  repository: registry.redhat.io/ubi9/nodejs-20
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  create: true
-  automount: true
-  name: "kubernetes-mcp-server"
-
-rbac:
-  # Use "mcp-no-permissions" for mcp-remote-access example (apply that ClusterRole first).
-  clusterRole: "cluster-admin"
-
-# Kubeconfig for MCP to use remote/specific cluster (optional). When set, volume is mounted and --kubeconfig is passed.
-# kubeconfigSecret: ""
-# kubeconfigSecretKey: "kubeconfig"
-
-# OpenShift specific configuration
+# Enable OpenShift specific features
 openshift:
   route:
     enabled: true
@@ -43,7 +18,62 @@ openshift:
     create: true
     name: "kubernetes-mcp-server-scc"
 
-# Resource limits appropriate for OpenShift
+replicaCount: 1
+
+# Container image - official pre-built Go binary from quay.io
+image:
+  registry: quay.io
+  repository: containers/kubernetes_mcp_server
+  # Tag or sha digest for the image
+  version: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: "kubernetes-mcp-server"
+
+# RBAC configuration
+rbac:
+  # Use "cluster-admin" for full access, or a custom role for production
+  clusterRole: "cluster-admin"
+
+# Kubeconfig for remote/specific cluster access (optional).
+# When set, volume is mounted and config uses kubeconfig strategy.
+# kubeconfigSecret: ""
+# kubeconfigSecretKey: "kubeconfig"
+
+podAnnotations: {}
+podLabels: {}
+
+# Default Security Context for the Pod when one is not provided
+defaultPodSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+podSecurityContext: {}
+
+# Default Security Context for the Container when one is not provided
+defaultSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+
+securityContext: {}
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+
+# Resource limits
 resources:
   limits:
     cpu: 500m
@@ -52,82 +82,41 @@ resources:
     cpu: 100m
     memory: 128Mi
 
-# Security context — empty by default; OpenShift SCC assigns UID/GID automatically.
-# Override only if you need a specific UID (e.g. vanilla Kubernetes).
-podSecurityContext: {}
+# Liveness and readiness probes using native /healthz endpoint
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 15
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
 
-securityContext: {}
-
-# MCP Server configuration
-mcpServer:
-  # Port for the MCP server
-  port: 8000
-  # Port for SSE endpoint (Server-Sent Events)
-  ssePort: 8080
-  # Node.js package version
-  packageVersion: "latest"
-  # Environment variables
-  env: {}
-  # Additional command line arguments
-  args: []
-
-service:
-  type: ClusterIP
-  port: 8080
-  targetPort: 8080
-  # Port for MCP protocol
-  mcpPort: 8000
-  mcpTargetPort: 8000
-
+# Ingress configuration (disabled by default, using OpenShift Route instead)
 ingress:
   enabled: false
   className: ""
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
     - host: kubernetes-mcp-server.local
       paths:
         - path: /
           pathType: Prefix
   tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
-
-
-# Default probes use /healthz (provided by supergateway --healthEndpoint /healthz).
-# IMPORTANT: Do NOT probe /sse — supergateway only supports ONE SSE connection.
-# Override only if you know what you're doing:
-# livenessProbe:
-#   httpGet:
-#     path: /healthz
-#     port: sse-port
-#   initialDelaySeconds: 30
-#   periodSeconds: 15
-#   timeoutSeconds: 5
-#   failureThreshold: 3
-# readinessProbe:
-#   httpGet:
-#     path: /healthz
-#     port: sse-port
-#   initialDelaySeconds: 15
-#   periodSeconds: 10
-#   timeoutSeconds: 5
-#   failureThreshold: 3
-
-
-
-# Additional volumes on the output Deployment definition.
-volumes: []
+# Additional volumes
+extraVolumes: []
 # - name: foo
 #   secret:
 #     secretName: mysecret
 #     optional: false
 
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
+# Additional volumeMounts
+extraVolumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
@@ -138,3 +127,12 @@ tolerations: []
 
 affinity: {}
 
+# Path to the configuration file inside the container
+configFilePath: /etc/kubernetes-mcp-server/config.toml
+
+# MCP Server configuration options (rendered as TOML).
+# See https://github.com/containers/kubernetes-mcp-server/blob/main/pkg/config/config.go
+config:
+  port: "{{ .Values.service.port }}"
+  # Strategy to find clusters: "in-cluster" (uses ServiceAccount) or "kubeconfig" (uses kubeconfig file)
+  cluster_provider_strategy: "in-cluster"
