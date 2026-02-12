@@ -18,7 +18,7 @@ spec:
     targetRevision: HEAD
     helm:
       valueFiles:
-      - ../values-common.yaml
+      - ../../gitops/values-common.yaml
       - ../inference/values-inference.yaml
   syncPolicy:
     automated:

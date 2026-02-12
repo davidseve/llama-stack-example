@@ -18,7 +18,7 @@ spec:
     targetRevision: remote-kubernetes-mcp
     helm:
       valueFiles:
-      - ../values-common.yaml
+      - ../../gitops/values-common.yaml
   syncPolicy:
     automated:
       prune: true

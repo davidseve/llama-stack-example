@@ -24,7 +24,7 @@ spec:
     path: charts/postgress
     helm:
       valueFiles:
-      - ../values-common.yaml
+      - ../../gitops/values-common.yaml
   project: default
   syncPolicy:
     automated:
