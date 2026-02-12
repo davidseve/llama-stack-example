@@ -1,45 +1,130 @@
 {
-  "benchmark_id": "ragas_benchmark_batch_run_20251223_100627",
-  "timestamp": "2025-12-23T10:07:23.751411",
-  "metrics": {
-    "answer_relevancy": 0.9824502449594705,
-    "faithfulness": 1.0,
-    "context_precision": 0.9999999999,
-    "context_recall": 1.0
-  },
-  "individual_scores": {
-    "answer_relevancy": [
-      0.9824502449594705
-    ],
-    "faithfulness": [
-      1.0
-    ],
-    "context_precision": [
-      0.9999999999
-    ],
-    "context_recall": [
-      1.0
-    ]
-  },
-  "generations": [
+  "benchmark_id": "ragas_benchmark_batch_run_20260212_100013",
+  "timestamp": "2026-02-12T10:20:54.920013",
+  "metrics": {},
+  "individual_scores": {},
+  "generations": [],
+  "failures": [
     {
-      "user_input": "How many residents does the city of Millbrook have and in what year was it incorporated?",
-      "retrieved_contexts": [
-        "# DOCUMENT 1: CITY DEMOGRAPHIC REPORT\n\n**Millbrook Municipal Planning Department**  \n**Publication Date:** March 15, 2024  \n**Report ID:** MPD-2024-003\n\n## Executive Summary\n\nMillbrook, incorporated in 1892, serves as a diverse mid-sized city of 47,832 residents spanning 23.4 square miles. The municipality encompasses four distinct neighborhoods: Historic Downtown, Riverside District, University Heights, and New Millbrook. Population density averages 2,043 residents per square mile, with significant demographic variation across districts.\n\n## Demographic Breakdown by Neighborhood\n\n### Historic Downtown (Population: 12,847)\n\n* Median Age: 34.2 years\n* Hispanic/Latino: 35.2%\n* African American: 23.1%\n* White: 28.7%\n* Asian: 8.9%\n* Other: 4.1%\n\n### Riverside District (Population: 15,234)\n\n* Median Age: 41.6 years\n* White: 45.3%\n* Hispanic/Latino: 26.8%\n* African American: 15.2%\n* Asian: 9.1%\n* Other: 3.6%\n\n### University Heights (Population: 11,982)\n\n* Median Age: 28.9 years\n* White: 42.1%\n* Asian: 24.3%\n* Hispanic/Latino: 18.7%\n* African American: 11.2%\n* Other: 3.7%\n\n### New Millbrook (Population: 7,769)\n\n* Median Age: 36.8 years\n* Hispanic/Latino: 38.9%\n* White: 31.2%\n* African American: 18.4%\n* Asian: 7.8%\n* Other: 3.7%",
-        "---\n\n**Related Articles:**\n- *\"A History of Bridge 7: Six Decades Connecting Our Community\"* (Page A4)  \n- *\"Small Business Survival: Tips for Navigating Construction Disruptions\"* (Business Section, Page B1)  \n- *\"Emergency Medical Response: What You Need to Know\"* (Health Section, Page C3)\n\n---\n\n**Staff Writer Jennifer Martinez can be reached at jmartinez@millbrookchronicle.com**\n\n*The Millbrook Chronicle is published daily (Monday-Saturday) at 445 Press Avenue, University Heights. Subscriptions: (555) 789-NEWS*\n\n---\n\n**THE MILLBROOK CHRONICLE**  \n*Est. 1894 - \"Your Community, Your News\"*",
-        "# DOCUMENT 3: CITY COUNCIL MEETING MINUTES\n\n**Millbrook City Council**  \n**Regular Session Meeting Minutes**  \n**Date:** October 15, 2024  \n**Location:** City Hall, Council Chambers  \n**Time:** 7:00 PM - 9:45 PM\n\n## Attendees\n\n**Council Members Present:**\n- Mayor Patricia Thompson\n- Councilman Marcus Chen (District 2) - Infrastructure Committee Chair\n- Councilwoman Sarah Johnson (District 1)\n- Councilman David Kim (District 3)\n- Councilwoman Maria Rodriguez (District 4)\n\n**Staff Present:**\n- City Manager Robert Stevens\n- Public Works Director James Mitchell\n- City Attorney Linda Brown\n\n**Public Attendees:** Approximately 45 residents\n\n## Agenda Items\n\n### Item 1: Call to Order and Roll Call\nMayor Thompson called the meeting to order at 7:00 PM. All council members present.\n\n### Item 2: Public Comment Period\n- Ahmed Al-Rashid (Historic Downtown Business Association): Expressed concerns about Bridge 7 closure impact on downtown businesses. Estimated 25-35% reduction in customer traffic during construction.\n- Rosa Romano (Romano's Bakery): Supported infrastructure improvements but requested expedited timeline due to business impacts.\n- Dr. Elena Vasquez (Millbrook General Hospital): Raised concerns about emergency response time increases affecting patient outcomes, particularly for cardiac emergencies.\n\n### Item 3: Bridge 7 Infrastructure Emergency\n\n**Presented by:** Councilman Marcus Chen\n\n**Background:** Bridge 7, constructed in 1963, connects Historic Downtown with Riverside District across Millbrook River. Recent inspection by Sofia Okafor, PE, of Okafor Engineering Solutions revealed critical structural deficiencies requiring immediate action.\n\n**Key Findings:**\n- Current load capacity reduced to 65% of original 40-ton design specification\n- Pylon displacement of 15.3 cm detected\n- Micro-cracking in primary support beams\n- Natural frequency reduced by 18%, indicating structural fatigue",
-        "# DOCUMENT 9: NEWSPAPER ARTICLE\n\n---\n\n**THE MILLBROOK CHRONICLE**\n\n*\"Serving Millbrook Since 1894\"*\n\n---\n\n## Bridge 7 Rehabilitation Approved: 6-8 Month Closure Begins November 1\n\n**Downtown businesses brace for impact; Hospital coordinates emergency protocols**\n\n**By Jennifer Martinez, Staff Reporter**  \n**Published: October 17, 2024**\n\n![Millbrook Bridge 7 - Photo: Construction barriers being installed]\n\nMILLBROOK - In a unanimous vote Tuesday night, the Millbrook City Council approved a $2.5 million rehabilitation project for Bridge 7, the 61-year-old span connecting Historic Downtown with Riverside District across the Millbrook River.\n\nThe bridge, constructed in 1963, will be completely closed to all traffic for an estimated 6-8 months beginning November 1, 2024, following an engineering assessment that identified critical structural deficiencies.\n\n### Engineering Assessment Reveals Critical Problems\n\nSofia Okafor, PE, principal engineer at Okafor Engineering Solutions, presented findings from a comprehensive structural assessment conducted October 5-10. The report identified multiple failure points requiring immediate intervention.\n\n\"The bridge has reached a critical point in its structural lifespan,\" Okafor told the Council. \"Our analysis shows current load capacity at only 65% of the original 40-ton design specification. Without intervention, we're looking at a failure timeline of 8-14 months.\"\n\nKey structural deficiencies include:\n- Pylon displacement of 15.3 centimeters from design specifications  \n- Micro-cracking in eight of twelve primary support beams  \n- 18% reduction in natural frequency, indicating structural fatigue  \n- Foundation integrity concerns due to differential settlement and erosion",
-        "Other residents expressed appreciation for the business relief fund and emergency access protocols.\n\n\"I'm glad the city is being proactive about helping our downtown businesses,\" said Riverside District resident Maria Gonzalez. \"These establishments are part of what makes Millbrook special. We need to support them.\"\n\n### Historical Context\n\nBridge 7 has been a vital connection point in Millbrook's infrastructure since its construction in 1963. The span is 342 feet long and 38 feet wide, carrying an average of 12,400 vehicles daily across the Millbrook River.\n\nThe bridge's construction was part of a broader infrastructure expansion program in the 1960s as Millbrook grew from a small town of 8,000 residents to a mid-sized city. Today, Millbrook's population exceeds 47,800 residents across four distinct neighborhoods.\n\nThis will be the first major rehabilitation work on Bridge 7 since its construction 61 years ago, though routine maintenance and minor repairs have been performed throughout its service life.\n\n### Looking Ahead\n\nCity officials emphasized that while the bridge closure will create challenges, it's essential for public safety and the community's long-term infrastructure needs.\n\n\"Infrastructure isn't glamorous, but it's the foundation of everything we do,\" Mayor Patricia Thompson said in closing remarks. \"Safe roads, reliable bridges, clean water - these are the basics we sometimes take for granted until they're threatened. This project is an investment in Millbrook's future.\"\n\nThe Council will receive weekly progress reports throughout the construction period, with quarterly economic impact assessments to determine if additional business relief funding is needed.\n\nFor more information about the Bridge 7 rehabilitation project, including construction timeline updates, traffic routing maps, and business relief fund applications, visit www.cityofmillbrook.gov/bridge7 or call the Public Information Hotline at (555) 789-4000.\n\n---",
-        "## PROFILE: Emmanuel Okafor\n\n**Position:** Student  \n**Institution:** Millbrook Middle School (8th Grade)  \n**DOB:** December 1, 2010  \n\n**Family:** Son of Dr. Kwame Okafor and Sofia Okafor, younger sister Chioma (11)  \n**Interests:** Basketball, robotics club  \n**Languages:** English (native), Igbo (basic)\n\n## PROFILE: Miguel Vasquez\n\n**Position:** Architect  \n**Institution:** Vasquez & Associates Architecture  \n**Address:** Riverside District  \n**DOB:** May 15, 1973  \n**Education:**\n\n* Bachelor of Architecture, Universidad de Los Andes (1996)\n* Master of Architecture, MIT (1998)\n\n**Professional History:** Miguel established his architecture firm in 2005, focusing on sustainable urban design and community spaces. He has designed several public buildings in Millbrook, including the expanded public library and community center.\n\n**Family:** Married to Dr. Elena Vasquez, two children: Carmen (16) and Diego (13)  \n**Languages:** Spanish (native), English (fluent)",
-        "**SAT (May 2024):**\n- Evidence-Based Reading and Writing: 710\n- Math: 650\n- Total: 1360\n\n**AP Examinations:**\n- Will take AP Spanish Language & Culture (expected 5)\n- Will take AP U.S. Government (expected 4-5)\n- Will take AP English Language & Composition (expected 4)\n\n---\n\n### EXTRACURRICULAR ACTIVITIES\n\n**Spanish Club**\n- Member (9th-11th grade)\n- Secretary (10th grade)\n- President (11th grade)\n- Organized Millbrook International Festival 2024\n- Coordinated language tutoring program\n\n**Drama Club**\n- Member (10th-11th grade)\n- Lead roles: Juliet (Romeo & Juliet), Nina (In the Heights)\n- Supporting roles in 3 additional productions\n\n**National Honor Society**\n- Inducted 11th grade\n- Community service: 75 hours (ongoing)\n\n**Peer Tutoring Program**\n- Spanish tutor for underclassmen (10th-11th grade)\n- 4 hours per week\n\n**Millbrook Youth Advisory Council**\n- Student representative (11th grade)\n- Provides input on youth programs and city initiatives\n\n---\n\n### COMMUNITY SERVICE\n\n**Total Hours:** 127 hours (9th-11th grade)\n\n**Activities:**\n- Millbrook General Hospital teen volunteer program: 45 hours\n- Spanish tutoring for elementary students: 38 hours\n- Historic Downtown cleanup initiatives: 22 hours\n- Food bank sorting and distribution: 18 hours\n- International Festival coordination: 4 hours\n\n---\n\n### AWARDS AND HONORS\n\n- Principal's Honor Roll: All semesters (9th-11th grade)\n- Spanish Department Award: Outstanding Achievement (10th grade)\n- Drama Department Award: Best Actress (11th grade)\n- National Merit Commended Scholar (11th grade)\n- Lincoln High School Citizenship Award (10th grade)\n- Millbrook Rotary Club Service Award (11th grade)\n\n---\n\n### TEACHER RECOMMENDATIONS ON FILE",
-        "On a lighter note - Mr. Ahmed's son Omar came by the bakery today with his little sister Nadia. They're so cute. Omar is in 10th grade I think, and Nadia is in middle school. They were buying bread and some baklava. Mr. Ahmed makes the BEST baklava, but Nonna's cannoli are better (obviously, I'm not biased at all lol).\n\nThis bridge situation has made me realize how connected everyone in Millbrook is. Like, Emmanuel's mom inspects the bridge, his dad works at the hospital that's affected by the closure, Carmen's mom runs that hospital, Carmen's dad designs buildings, Lily's dad is on the city council dealing with it, Mrs. Martinez manages the ER that has to deal with longer ambulance times... it's all connected.\n\nI wonder if I'll find something I'm passionate about like all these people. Right now I just like Drama and helping Nonna at the bakery. Is that enough?\n\nAnyway, school tomorrow. Need to finish my Physics homework (ugh, Mr. Chen assigns so much) and study for the Spanish quiz.\n\n- Bella\n\n---\n\n### November 3, 2024 - Friday\n\nDear Diary,\n\nBIG NEWS - they're starting the bridge construction next week! There was a huge community meeting at the Historic Downtown Community Center tonight. Literally everyone was there. Mayor Thompson, the whole city council, the engineer lady (Mrs. Okafor), tons of downtown business owners, hospital people, school people, EVERYONE.\n\nNonna made me come with her. At first I was annoyed because I wanted to hang out with Carmen, but actually it was pretty interesting. Mrs. Okafor gave this whole presentation with slides and everything about the bridge structure and what they're going to do. She's really smart - she had all these technical diagrams but explained it so regular people could understand.",
-        "### Item 4: Small Business Relief Fund Implementation\n\n**Presented by:** Economic Development Director Sarah Williams\n\n**Proposed Framework:**\n- Application period: November 1-30, 2024\n- Eligibility: Businesses within 0.5 mile radius of Bridge 7\n- Maximum grant: $15,000 per business\n- Demonstrates 20% or greater revenue decline during construction period\n- Funds dispersed in two installments: 50% upfront, 50% upon completion\n\nRosa Romano asked about eligibility criteria for established vs. new businesses. Director Williams confirmed priority for businesses operating more than 3 years.\n\n**Vote:** Approved 5-0\n\n### Item 5: Traffic Management Plan\n\nPublic Works Director Mitchell outlined detour routing:\n- Main alternate route: Highway 45 to Oak Street Bridge\n- Temporary traffic signals at three intersections\n- Enhanced signage program\n- Real-time traffic updates via city mobile app\n- School bus routing adjustments coordinated with Millbrook Unified School District\n\nCouncilman Chen emphasized need for traffic enforcement during adjustment period.\n\n**Vote:** Approved 5-0\n\n### Item 6: Public Information Campaign\n\nCommunications Director Tom Anderson presented $75,000 public information campaign:\n- Multi-language outreach (English, Spanish, Mandarin, Arabic)\n- Social media updates\n- Direct mail to affected neighborhoods\n- Business community briefings\n- Website with construction timeline and updates\n\n**Vote:** Approved 5-0\n\n### Item 7: Community Meeting Schedule\n\nMonthly community meetings scheduled for project duration:\n- First meeting: November 5, 2024, 6:30 PM, Historic Downtown Community Center\n- Language interpretation services provided\n- Childcare available\n\n### Item 8: Emergency Response Coordination",
-        "**Marcus:** Fair point. I'll propose quarterly economic reviews as part of the motion.\n\n**Sarah:** What about the school district? Have they been consulted about bus routing?\n\n**Marcus:** Public Works is meeting with them tomorrow. The detour actually isn't too bad for most bus routes. Adds about five to seven minutes.\n\n**David:** That'll make some parents unhappy.\n\n**Marcus:** Parents are always unhappy about something. But five minutes versus a bridge collapse? Not a hard choice.\n\n**Sarah:** [laughs] You're not wrong. Okay, I'm comfortable with the presentation. Let's do this.\n\n**Marcus:** Thanks for the support. It's going to be a long meeting - lot of public comment expected.\n\n**David:** As there should be. This is a major decision affecting the whole community.\n\n**Sarah:** That's what I appreciate about Millbrook - people care. They show up. They engage.\n\n**Marcus:** Agreed. Even when it makes our jobs harder. [laughs] Alright, we should get to the council chambers. Meeting starts in fifteen minutes.\n\n---\n\n## TRANSCRIPT 3: Hospital Emergency Planning Meeting\n\n**Location:** Millbrook General Hospital, Conference Room 3B  \n**Date:** October 25, 2024  \n**Time:** 9:00 AM - 10:30 AM  \n**Participants:** Dr. Elena Vasquez (Chair), Rebecca Martinez (Emergency Nurse Manager), Sofia Okafor (Okafor Engineering), Fire Chief Robert Thompson, Dr. Kwame Okafor, City Manager Robert Stevens\n\n---\n\n**Dr. Elena Vasquez:** Thank you all for coming. This meeting is critical for ensuring patient safety during the Bridge 7 construction period. Rebecca, you have the current response time data?\n\n**Rebecca Martinez:** Yes. Current average response time from Historic Downtown is 6.2 minutes from 911 call to hospital arrival. From Riverside District, 4.8 minutes. From University Heights, 5.4 minutes.\n\n**Sofia Okafor:** And with the detour, those times increase by approximately 4.7 minutes on average?"
-      ],
-      "response": "The city of Millbrook has 47,832 residents and was incorporated in 1892 <|01_city_demographic_report.md_chunk_0|>.",
-      "reference": "Millbrook has 47,832 residents and was incorporated in 1892."
+      "batch_index": 1,
+      "error": "Evaluation job 0 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "How many residents does the city of Millbrook have and in what year was it incorporated?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "Millbrook has 47,832 residents and was incorporated in 1892."
+        }
+      ]
+    },
+    {
+      "batch_index": 2,
+      "error": "Evaluation job 1 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What is Dr. Elena Vasquez's current position and at what institution does she work?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "Dr. Elena Vasquez is Chief of Cardiology and Director of Millbrook General Hospital, located at 1247 Medical Plaza Dr., Riverside District."
+        }
+      ]
+    },
+    {
+      "batch_index": 3,
+      "error": "Evaluation job 2 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What languages does Dr. Elena Vasquez speak and what is her native language?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "Dr. Elena Vasquez speaks Spanish (native), English (fluent), and Portuguese (conversational)."
+        }
+      ]
+    },
+    {
+      "batch_index": 4,
+      "error": "Evaluation job 3 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What are the contradictory figures mentioned about Bridge 7's load capacity?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "The document presents contradictory information about Bridge 7's load capacity: 25 tons (current), 40 tons (original), and 15-ton restrictions."
+        }
+      ]
+    },
+    {
+      "batch_index": 5,
+      "error": "Evaluation job 4 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What does Sofia Okafor's PE license mean and what license numbers does she have?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "Sofia Okafor's PE license means Professional Engineer. She holds PE license #89472 from Texas and PE license #67821 from California, which allow her to practice engineering and sign engineering documents."
+        }
+      ]
+    },
+    {
+      "batch_index": 6,
+      "error": "Evaluation job 5 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "How are Carmen Vasquez and Emmanuel Okafor connected through their families?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "Carmen Vasquez is the daughter of Dr. Elena Vasquez and Emmanuel Okafor is the son of Dr. Kwame Okafor. Their mothers work together at Millbrook General Hospital, where Elena is Hospital Director and Kwame is a pediatrician. Carmen and Emmanuel are friends."
+        }
+      ]
+    },
+    {
+      "batch_index": 7,
+      "error": "Evaluation job 6 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What languages are mixed in the code-switching conversation at the bakery and who uses each one?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "The bakery conversation features multiple code-switching: Ahmed mixes Arabic ('أهلاً وسهلاً' and 'المجتمع يجب أن يعرف') with English; Dr. Vasquez mixes Spanish ('Gracias' and 'Para los pacientes cardíacos') with English; Marcus mixes English with Mandarin ('你明白吗？'); and Isabella mixes Italian ('Scusi' and 'questi ponti vengono e vanno') with Spanish/English."
+        }
+      ]
+    },
+    {
+      "batch_index": 8,
+      "error": "Evaluation job 7 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What is the daily economic impact of the bridge situation according to the document?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "The document mentions an economic impact of $47,000 per day, although commercial impact estimates of 25-35% are also cited."
+        }
+      ]
+    },
+    {
+      "batch_index": 9,
+      "error": "Evaluation job 8 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What are the specific technical reasons why Bridge 7 needs immediate attention according to the engineering report?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "The technical reasons include: 15.3cm pylon displacement, load capacity reduced to 65%, micro-fracturing, and an 18% reduction in natural frequency. These factors support the council's concern about an 8-14 month failure timeline and the need for immediate $2.3 million intervention."
+        }
+      ]
+    },
+    {
+      "batch_index": 10,
+      "error": "Evaluation job 9 returned no scores. The job may still be running or failed server-side.",
+      "data": [
+        {
+          "user_input": "What medical concerns are mentioned regarding the bridge construction and what health professionals are involved in the planning?",
+          "response": "ERROR: Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
+          "retrieved_contexts": [],
+          "reference": "The main concerns are increased emergency response times (+4.7 minutes) affecting cardiac patients. Dr. Elena Vasquez (Hospital Director) and Rebecca Martinez (Emergency Nursing Manager) are involved in planning alternative routes and weekly progress reviews."
+        }
+      ]
     }
   ],
-  "failures": [],
-  "batch_mode": false
+  "batch_mode": true
 }

@@ -15,6 +15,7 @@ Based on:
 
 import json
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -271,7 +272,7 @@ def run_evaluation(
     extra_body = {
         "provider_id": provider_id,
         "judge_model": model_id,
-        "embedding_model": embedding_model_id or "granite-embedding-125m",
+        "embedding_model": embedding_model_id or os.environ.get("EMBEDDING_MODEL", ""),
     }
     
     # Run evaluation with run_eval (as per server error message)

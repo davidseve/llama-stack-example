@@ -43,7 +43,7 @@ providers:
 # MCP Server endpoints
 mcpServers:
   openshift:
-    uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/sse"
+    uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/mcp"
 
 # server:
 #   distribution:
