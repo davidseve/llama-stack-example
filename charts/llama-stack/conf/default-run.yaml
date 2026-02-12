@@ -302,6 +302,9 @@ registered_resources:
   - metadata: {}
     model_id: {{ $vllm.modelId }}
     provider_id: {{ $name }}-vllm-inference
+    {{- if $vllm.providerModelId }}
+    provider_model_id: {{ $vllm.providerModelId }}
+    {{- end }}
     model_type: llm
   {{- end }}
   {{- if .Values.providers.sentenceTransformers.enabled }}
