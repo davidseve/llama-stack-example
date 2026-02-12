@@ -15,7 +15,7 @@ spec:
   source: 
     path: charts/llama-stack
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: remote-kubernetes-mcp
+    targetRevision: HEAD
     helm:
       valueFiles:
       - ../../gitops/values-common.yaml

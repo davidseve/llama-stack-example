@@ -20,7 +20,7 @@ spec:
     namespace: {{ .Values.global.namespace }}
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: remote-kubernetes-mcp
+    targetRevision: HEAD
     path: charts/postgress
     helm:
       valueFiles:
