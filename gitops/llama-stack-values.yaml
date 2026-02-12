@@ -21,7 +21,7 @@ providers:
     defaultTemperature: "0.1"
   postgres:
     enabled: true
-    host: "postgres.llama-stack-ai2.svc.cluster.local"
+    host: "postgres.llama-stack-example.svc.cluster.local"
     port: "5432"
     secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 

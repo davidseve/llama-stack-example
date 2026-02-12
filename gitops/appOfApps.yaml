@@ -16,7 +16,7 @@ spec:
     targetRevision: remote-kubernetes-mcp
     helm:
       valueFiles:
-      - values-common.yaml
+      - ../values-common.yaml
       values: |  
         applications:
           rhoai:
