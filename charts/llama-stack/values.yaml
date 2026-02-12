@@ -13,6 +13,8 @@ project:
   autocreate: true
 route:
   enable: true
+  timeout: "300s"  # HAProxy idle timeout - increase for long-running LLM + MCP tool calls
+  annotations: {}  # Additional route annotations (e.g., rate limiting)
 
 # ConfigMap configuration
 config:
@@ -62,7 +64,7 @@ server:
         memory: 500Mi
 
   # Distribution configuration
-  # distribution:
+  distribution: {}
   #   image: quay.io/opendatahub/llama-stack:odh
 
   # Storage configuration
@@ -147,18 +149,6 @@ providers:
   # FAISS configuration
   faiss:
     enabled: false
-    kvstore:
-      type: "sqlite"
-      namespace: ""
-      dbPath: ""
-      host: ""
-      port: ""
-      db: ""
-      user: ""
-      sslMode: ""
-      caCertPath: ""
-      tableName: ""
-      collectionName: ""
 
   # FMS Safety configuration
   fms:

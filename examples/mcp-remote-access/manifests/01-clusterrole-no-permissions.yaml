@@ -1,0 +1,8 @@
+# ClusterRole with no rules: MCP in-cluster ServiceAccount gets no API access.
+# Used to prove MCP uses only the kubeconfig (see examples/mcp-remote-access/README.md).
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mcp-no-permissions
+rules: []

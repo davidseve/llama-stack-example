@@ -1,0 +1,27 @@
+# Override for the mcp-remote-access example.
+# Deploys an independent MCP instance via Helm (NOT managed by ArgoCD),
+# with distinct names to avoid collisions with the ArgoCD-managed instance.
+global:
+  namespace: llama-stack-example
+
+fullnameOverride: mcp-remote-access
+
+serviceAccount:
+  create: true
+  name: mcp-remote-access
+  automount: false
+
+rbac:
+  clusterRole: mcp-no-permissions
+
+kubeconfigSecret: mcp-remote-access-kubeconfig
+
+config:
+  cluster_provider_strategy: "kubeconfig"
+  kubeconfig: "/etc/mcp/kubeconfig"
+
+openshift:
+  route:
+    enabled: true
+  scc:
+    create: false

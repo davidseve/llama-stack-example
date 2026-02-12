@@ -15,6 +15,7 @@ Based on:
 
 import json
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -271,7 +272,7 @@ def run_evaluation(
     extra_body = {
         "provider_id": provider_id,
         "judge_model": model_id,
-        "embedding_model": embedding_model_id or "granite-embedding-125m",
+        "embedding_model": embedding_model_id or os.environ.get("EMBEDDING_MODEL", ""),
     }
     
     # Run evaluation with run_eval (as per server error message)
@@ -309,8 +310,28 @@ def run_evaluation(
                 if results.get("scores"):
                     print(f"   ✓ Results received after {waited}s")
                     break
-                else:
-                    print(f"   Waiting... ({waited}s)")
+                
+                # Detect failed jobs early (server returns status but no scores)
+                job_status = results.get("status")
+                if job_status in ("failed", "error"):
+                    error_msg = results.get("error", "Unknown evaluation error")
+                    print(f"   ✗ Job failed after {waited}s: {error_msg}")
+                    break
+                
+                # Also check for the job status endpoint
+                try:
+                    status_url = f"{client.base_url}/v1alpha/eval/benchmarks/{benchmark_id}/jobs/{job.job_id}"
+                    status_response = client._client.get(status_url)
+                    if status_response.status_code == 200:
+                        status_data = status_response.json()
+                        job_status_val = status_data.get("status") if isinstance(status_data, dict) else None
+                        if job_status_val in ("failed", "error"):
+                            print(f"   ✗ Job failed after {waited}s (status: {job_status_val})")
+                            break
+                except Exception:
+                    pass  # Status endpoint may not exist; continue polling results
+                
+                print(f"   Waiting... ({waited}s)")
             except Exception as e:
                 print(f"   Waiting... ({waited}s) - {e}")
         

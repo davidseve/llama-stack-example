@@ -12,7 +12,7 @@ spec:
     name: {{ include "kubernetes-mcp-server.fullname" . }}
     weight: 100
   port:
-    targetPort: sse-port
+    targetPort: http
   {{- with .Values.openshift.route.tls }}
   tls:
     {{- toYaml . | nindent 4 }}

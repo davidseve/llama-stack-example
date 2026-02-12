@@ -1,0 +1,2 @@
+# Generated kubeconfig (contains token); script removes it after creating Secret
+.kubeconfig.generated

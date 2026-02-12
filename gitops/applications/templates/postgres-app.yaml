@@ -13,15 +13,18 @@ metadata:
   name: postgres
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "-20"
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   destination:
     server: https://kubernetes.default.svc
-    namespace: llamastack
+    namespace: {{ .Values.global.namespace }}
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
     path: charts/postgress
+    helm:
+      valueFiles:
+      - ../../gitops/values-common.yaml
   project: default
   syncPolicy:
     automated:

@@ -15,6 +15,8 @@ spec:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: HEAD
     helm:
+      valueFiles:
+      - ../values-common.yaml
       values: |  
         applications:
           rhoai:
@@ -32,7 +34,7 @@ spec:
           minio:
             enabled: true
           postgres:
-            enabled: false 
+            enabled: true 
           dspa:
             enabled: true
         providers:

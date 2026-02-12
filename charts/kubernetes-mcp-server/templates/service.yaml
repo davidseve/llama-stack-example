@@ -9,12 +9,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
+      targetPort: http
       protocol: TCP
-      name: sse-port
-    - port: {{ .Values.service.mcpPort }}
-      targetPort: {{ .Values.service.mcpTargetPort }}
-      protocol: TCP
-      name: mcp-port
+      name: http
   selector:
     {{- include "kubernetes-mcp-server.selectorLabels" . | nindent 4 }}

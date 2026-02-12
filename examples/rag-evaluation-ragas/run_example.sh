@@ -44,11 +44,57 @@ RAGAS_MODE="${RAGAS_MODE:-inline}"
 # Use RAGAS-specific vector store ID
 VECTOR_STORE_ID="${RAGAS_VECTOR_STORE_ID:-${VECTOR_STORE_ID:-}}"
 
+# ============================================================================
+# Helper: Validate vector store exists on the server
+# ============================================================================
+validate_vector_store() {
+    local vs_id="$1"
+    local url="$2"
+    local ssl_flag=""
+    if [ "$VERIFY_SSL" != "true" ]; then
+        ssl_flag="--insecure"
+    fi
+
+    # Try to GET the vector store from the server
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" $ssl_flag \
+        "${url}/v1/vector_stores/${vs_id}" 2>/dev/null) || true
+
+    if [ "$http_code" = "200" ]; then
+        return 0  # Vector store exists
+    else
+        return 1  # Vector store not found or server error
+    fi
+}
+
+# Helper: Update or add a key in .env without creating duplicates
+update_env_key() {
+    local key="$1"
+    local value="$2"
+    local env_file="$3"
+
+    if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+        # Update existing entry
+        sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+    else
+        # Append new entry
+        echo "${key}=${value}" >> "$env_file"
+    fi
+}
+
 # Auto-detect if we should skip upload based on VECTOR_STORE_ID
+SKIP_UPLOAD="${SKIP_UPLOAD:-false}"
 if [ -n "$VECTOR_STORE_ID" ]; then
-    SKIP_UPLOAD="true"
-else
-    SKIP_UPLOAD="${SKIP_UPLOAD:-false}"
+    echo "🔍 Validating existing vector store: $VECTOR_STORE_ID ..."
+    if validate_vector_store "$VECTOR_STORE_ID" "$LLAMA_STACK_URL"; then
+        echo "✅ Vector store exists on the server"
+        SKIP_UPLOAD="true"
+    else
+        echo "⚠️  Vector store $VECTOR_STORE_ID not found on server (stale ID)"
+        echo "   Will create a new vector store..."
+        VECTOR_STORE_ID=""
+        SKIP_UPLOAD="false"
+    fi
 fi
 
 # ============================================================================
@@ -113,8 +159,8 @@ else
         exit 1
     fi
     
-    # Save to shared .env for future runs
-    echo "RAGAS_VECTOR_STORE_ID=$VECTOR_STORE_ID" >> "$EXAMPLES_DIR/.env"
+    # Save to shared .env for future runs (update in-place, no duplicates)
+    update_env_key "RAGAS_VECTOR_STORE_ID" "$VECTOR_STORE_ID" "$EXAMPLES_DIR/.env"
     
     echo ""
     echo "✅ Step 1 Complete - Vector Store ID: $VECTOR_STORE_ID"
@@ -159,7 +205,7 @@ python evaluate_ragas.py \
     --output "$RESULTS_FILE" \
     --mode "$RAGAS_MODE" \
     --batch-size 1 \
-    --max-wait 120 \
+    --max-wait 300 \
     $([ "$VERIFY_SSL" = "true" ] && echo "--verify-ssl") || {
     echo "❌ ERROR: evaluate_ragas.py failed"
     exit 1

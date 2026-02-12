@@ -9,7 +9,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   destination:
-    namespace: openshift-gitops
+    namespace: {{ .Values.global.namespace }}
     server: 'https://kubernetes.default.svc'
   project: default
   source: 
@@ -19,7 +19,6 @@ spec:
     helm:
       valueFiles:
       - ../../gitops/values-common.yaml
-      - ../../gitops/inference/values-inference.yaml
   syncPolicy:
     automated:
       prune: true

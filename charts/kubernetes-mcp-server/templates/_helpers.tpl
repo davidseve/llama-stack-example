@@ -62,6 +62,17 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Create the image path for the passed in image field
+*/}}
+{{- define "kubernetes-mcp-server.image" -}}
+{{- if eq (substr 0 7 .version) "sha256:" -}}
+{{- printf "%s/%s@%s" .registry .repository .version -}}
+{{- else -}}
+{{- printf "%s/%s:%s" .registry .repository .version -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Create the name of the security context constraint to use
 */}}
 {{- define "kubernetes-mcp-server.sccName" -}}
@@ -69,19 +80,6 @@ Create the name of the security context constraint to use
 {{- default (include "kubernetes-mcp-server.fullname" .) .Values.openshift.scc.name }}
 {{- else }}
 {{- .Values.openshift.scc.name }}
-{{- end }}
-{{- end }}
-
-{{/*
-OpenShift Route host
-*/}}
-{{- define "kubernetes-mcp-server.routeHost" -}}
-{{- if .Values.openshift.route.host }}
-{{- .Values.openshift.route.host }}
-{{- else }}
-{{- $shortName := .Release.Name | trunc 15 | trimSuffix "-" }}
-{{- $namespace := include "kubernetes-mcp-server.namespace" . | trunc 15 | trimSuffix "-" }}
-{{- printf "mcp-%s-%s.apps.your-cluster.com" $shortName $namespace }}
 {{- end }}
 {{- end }}
 

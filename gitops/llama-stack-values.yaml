@@ -7,8 +7,8 @@ config:
 providers:
   vllm:
     llama-4-scout:
-      modelId: "vllm-inference/llama-4-scout-17b-16e-w4a16"
-      providerModelId: "llama-4-scout-17b-16e-w4a16"  # Actual model name on vLLM server
+      modelId: "llama-4-scout-17b-16e-w4a16"  # Must match actual model name on vLLM server
+      providerModelId: "llama-4-scout-17b-16e-w4a16"
       url: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
       maxTokens: "4096"
       tlsVerify: "false"
@@ -16,10 +16,16 @@ providers:
   
   # RAGAS Provider for RAG evaluation metrics
   ragas:
-    embeddingModel: "granite-embedding-125m"
+    embeddingModel: "sentence-transformers/ibm-granite/granite-embedding-125m-english"
     defaultMaxTokens: "2048"
     defaultTemperature: "0.1"
+  postgres:
+    enabled: true
+    host: "postgres.llama-stack-example.svc.cluster.local"
+    port: "5432"
+    secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
+   
   # Kubeflow/DSPA configuration for ragas-remote
   # Ref: https://github.com/opendatahub-io/llama-stack-provider-ragas/blob/main/demos/llama-stack-openshift/README.md
   kubeflow:
