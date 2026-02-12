@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # MCP remote-access example: one cluster, MCP uses kubeconfig (token), in-cluster SA has no permissions.
+# Deploys an independent MCP instance via Helm (not managed by ArgoCD) with distinct resource names.
 # Prereqs: oc logged in to the cluster, namespace exists (or set NAMESPACE).
 # Usage: from repo root: ./examples/mcp-remote-access/run_example.sh
 #
@@ -9,9 +10,13 @@ set -e
 EXAMPLE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$EXAMPLE_DIR/../.." && pwd)"
 NAMESPACE="${NAMESPACE:-llama-stack-example}"
-RELEASE_NAME="${RELEASE_NAME:-kubernetes-mcp}"
+RELEASE_NAME="${RELEASE_NAME:-mcp-remote-access}"
 CLUSTER_API_URL="${CLUSTER_API_URL:-$(oc whoami --show-server 2>/dev/null || echo "")}"
 KUBECONFIG_GENERATED="$EXAMPLE_DIR/.kubeconfig.generated"
+
+# Matches fullnameOverride in values-override.yaml — used for deployment, service, route names.
+MCP_FULLNAME="mcp-remote-access"
+KUBECONFIG_SECRET="${MCP_FULLNAME}-kubeconfig"
 
 echo "=== MCP remote-access example ==="
 echo "Namespace: $NAMESPACE  Release: $RELEASE_NAME  Cluster API: $CLUSTER_API_URL"
@@ -46,22 +51,21 @@ echo "Building kubeconfig from template..."
 sed -e "s|__CLUSTER_SERVER__|$CLUSTER_API_URL|g" -e "s|__TOKEN__|$TOKEN|g" "$EXAMPLE_DIR/kubeconfig.template.yaml" > "$KUBECONFIG_GENERATED"
 trap "rm -f '$KUBECONFIG_GENERATED'" EXIT
 
-# 6) Create or replace Secret in namespace
-oc get secret kubernetes-mcp-server-kubeconfig -n "$NAMESPACE" >/dev/null 2>&1 && oc delete secret kubernetes-mcp-server-kubeconfig -n "$NAMESPACE"
-oc create secret generic kubernetes-mcp-server-kubeconfig --from-file=kubeconfig="$KUBECONFIG_GENERATED" -n "$NAMESPACE"
+# 6) Create or replace kubeconfig Secret in namespace
+oc get secret "$KUBECONFIG_SECRET" -n "$NAMESPACE" >/dev/null 2>&1 && oc delete secret "$KUBECONFIG_SECRET" -n "$NAMESPACE"
+oc create secret generic "$KUBECONFIG_SECRET" --from-file=kubeconfig="$KUBECONFIG_GENERATED" -n "$NAMESPACE"
 
-# 7) Helm upgrade --install with kubeconfig and mcp-no-permissions
+# 7) Helm upgrade --install (independent instance, does not touch ArgoCD-managed resources)
 echo "Installing/upgrading MCP chart..."
 helm upgrade --install "$RELEASE_NAME" "$REPO_ROOT/charts/kubernetes-mcp-server" -n "$NAMESPACE" \
   -f "$EXAMPLE_DIR/values-override.yaml" \
   --set global.namespace="$NAMESPACE"
 
 # 8) Wait for deployment and route
-oc rollout status deployment/"$RELEASE_NAME-kubernetes-mcp-server" -n "$NAMESPACE" --timeout=120s 2>/dev/null || oc rollout status deployment/kubernetes-mcp-server -n "$NAMESPACE" --timeout=120s 2>/dev/null || true
+oc rollout status deployment/"$MCP_FULLNAME" -n "$NAMESPACE" --timeout=120s
 echo "Waiting for route..."
-ROUTE_NAME="$RELEASE_NAME-kubernetes-mcp-server"
 for i in $(seq 1 30); do
-  ROUTE_HOST=$(oc get route "$ROUTE_NAME" -n "$NAMESPACE" -o jsonpath='{.spec.host}' 2>/dev/null || oc get route -n "$NAMESPACE" -o jsonpath='{.items[0].spec.host}' 2>/dev/null || true)
+  ROUTE_HOST=$(oc get route "$MCP_FULLNAME" -n "$NAMESPACE" -o jsonpath='{.spec.host}' 2>/dev/null || true)
   [[ -n "$ROUTE_HOST" ]] && break
   sleep 2
 done

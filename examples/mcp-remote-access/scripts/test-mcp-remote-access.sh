@@ -15,6 +15,7 @@ echo "$OUTPUT"
 echo "$OUTPUT" | grep -q "OK: MCP server responded with HTTP" || { echo "FAIL: Expected HTTP response from MCP server" >&2; FAIL=1; }
 echo "$OUTPUT" | grep -q "Namespaces (via MCP):" || { echo "FAIL: Expected Namespaces (via MCP)" >&2; FAIL=1; }
 echo "$OUTPUT" | grep -A 200 "Namespaces (via MCP):" | tail -n +2 | grep -q '[a-zA-Z0-9]' || { echo "FAIL: Expected at least one namespace" >&2; FAIL=1; }
+echo "$OUTPUT" | grep -A 200 "Namespaces (via MCP):" | grep -qi 'forbidden\|failed to list\|cannot list\|error' && { echo "FAIL: MCP returned a permission/error response instead of namespace list" >&2; FAIL=1; }
 
 [[ $FAIL -eq 0 ]] || { echo "Output:" >&2; echo "$OUTPUT" >&2; exit 1; }
 echo ""
