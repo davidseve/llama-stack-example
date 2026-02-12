@@ -19,7 +19,6 @@ spec:
     helm:
       valueFiles:
       - ../../gitops/values-common.yaml
-      - ../inference/values-inference.yaml
   syncPolicy:
     automated:
       prune: true
