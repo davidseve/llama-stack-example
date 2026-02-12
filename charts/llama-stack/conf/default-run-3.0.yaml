@@ -287,6 +287,17 @@ models:
   provider_id: {{ $name }}-vllm-embedding
   model_type: embedding
 {{- end }}
+{{- if .Values.providers.openai.enabled }}
+{{- range $name, $model := .Values.providers.openai.models }}
+- metadata: {}
+  model_id: {{ $model.modelId }}
+  provider_id: openai
+  {{- if $model.providerModelId }}
+  provider_model_id: {{ $model.providerModelId }}
+  {{- end }}
+  model_type: llm
+{{- end }}
+{{- end }}
 shields: []
 vector_dbs:
 {{- if .Values.vectorDbs }}

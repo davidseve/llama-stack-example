@@ -45,6 +45,7 @@ spec:
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}
+            OPENAI_API_KEY: ${GEMINI_API_KEY}
             KUBEFLOW_PIPELINES_TOKEN: ${KUBEFLOW_PIPELINES_TOKEN}
   syncPolicy:
     automated:

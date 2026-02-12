@@ -32,19 +32,25 @@ Use this option when you want to consume models from an external provider (e.g.,
    export LLAMA_4_SCOUT_API_TOKEN="<your_token>"
    ```
 
-2. (Optional) For RAGAS remote evaluation with Kubeflow Pipelines, export your user token:
+2. (Optional) To use **Gemini** models via Models.corp, export your Models.corp application credential:
+   ```bash
+   export GEMINI_API_KEY="<your_models_corp_credential>"
+   ```
+   > This enables Gemini models (e.g., `gemini-3-pro-preview`) through the OpenAI-compatible endpoint provided by Models.corp. See [Gemini integration](#gemini-via-modelscorp) below.
+
+3. (Optional) For RAGAS remote evaluation with Kubeflow Pipelines, export your user token:
    ```bash
    export KUBEFLOW_PIPELINES_TOKEN="$(oc whoami -t)"
    ```
    > ⚠️ **Note**: This token expires (~24h). You'll need to renew it periodically.
 
-3. Deploy using GitOps (OpenShift GitOps):
+4. Deploy using GitOps (OpenShift GitOps):
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
 **Notes:**
-- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}` and `${KUBEFLOW_PIPELINES_TOKEN}` before sending to `oc`.
+- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}`, `${GEMINI_API_KEY}`, and `${KUBEFLOW_PIPELINES_TOKEN}` before sending to `oc`.
 - Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
 - See [DSPA SSL Configuration](./docs/DSPA-SSL-CONFIGURATION.md) for details on RAGAS remote evaluation setup.
 
@@ -87,6 +93,72 @@ Use this option when you want to deploy and run the LLM model directly on your O
 **Notes:**
 - Model download may take several minutes depending on model size and network speed.
 - The `VLLM_URL` should point to your internal vLLM service endpoint.
+
+---
+
+### Gemini via Models.corp
+
+Llama Stack can use Google Gemini models through Red Hat's internal Models.corp infrastructure. The endpoint is OpenAI-compatible, so it connects directly via the `remote::openai` provider -- no proxy needed.
+
+**How it works:**
+
+```
+Llama Stack (remote::openai) → Models.corp APIcast → Google Gemini API
+```
+
+The Gemini endpoint at Models.corp exposes an OpenAI-compatible API at `/v1beta/openai/chat/completions`, which Llama Stack's `remote::openai` provider speaks natively.
+
+**Configuration:**
+
+The Gemini provider is pre-configured in `gitops/llama-stack-values.yaml`:
+
+```yaml
+providers:
+  openai:
+    enabled: true
+    baseUrl: "https://gemini--apicast-production.apps.int.stc.ai.prod.us-east-1.aws.paas.redhat.com:443/v1beta/openai"
+    models:
+      gemini-pro:
+        modelId: "gemini-3-pro-preview"
+        providerModelId: "gemini-3-pro-preview"
+```
+
+To add more models (e.g., `gemini-2.0-flash`), add entries under `models`:
+
+```yaml
+    models:
+      gemini-pro:
+        modelId: "gemini-3-pro-preview"
+        providerModelId: "gemini-3-pro-preview"
+      gemini-flash:
+        modelId: "gemini-2.0-flash"
+        providerModelId: "gemini-2.0-flash"
+```
+
+**Available Models.corp Gemini models:**
+
+| Model ID | Characteristics | Typical Use Cases |
+|----------|----------------|-------------------|
+| `gemini-2.0-flash` | Low-latency responses | Chatbots, mobile integrations |
+| `gemini-2.5-pro` | Extended processing (10+ seconds) | Complex reasoning tasks |
+| `gemini-3-pro-preview` | Latest generation | General AI tasks |
+
+**Usage from client code:**
+
+```python
+from llama_stack_client import LlamaStackClient
+
+client = LlamaStackClient(base_url="https://<your-llama-stack-route>")
+
+response = client.responses.create(
+    model="gemini-3-pro-preview",
+    input="Explain Kubernetes pods",
+    stream=True,
+)
+```
+
+> **Note**: For the API key, use your Models.corp application credential exported as `GEMINI_API_KEY` before deploying with `envsubst`.
+> Contact **#help-it-ai-platforms** for Models.corp access.
 
 ---
 

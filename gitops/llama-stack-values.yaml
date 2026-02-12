@@ -40,6 +40,15 @@ providers:
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
     sslVerify: false  # Use false with podToPodTLS: false in DSPA TODO verify if it works or not
 
+  # Gemini via Models.corp (OpenAI-compatible endpoint)
+  openai:
+    enabled: true
+    baseUrl: "https://gemini--apicast-production.apps.int.stc.ai.prod.us-east-1.aws.paas.redhat.com:443/v1beta/openai"
+    models:
+      gemini-pro:
+        modelId: "gemini-3-pro-preview"
+        providerModelId: "gemini-3-pro-preview"
+
 # MCP Server endpoints
 mcpServers:
   openshift:
