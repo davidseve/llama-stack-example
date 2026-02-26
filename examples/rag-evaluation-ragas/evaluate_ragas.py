@@ -192,7 +192,13 @@ def register_benchmark(
         if "already exists" in str(e).lower():
             print(f"  ℹ️  Benchmark already registered")
         else:
-            print(f"  ⚠️  Registration error: {e}")
+            error_detail = ""
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = f"\n   Server response: {e.response.text}"
+                except Exception:
+                    pass
+            print(f"  ⚠️  Registration error: {e}{error_detail}")
             raise
 
 

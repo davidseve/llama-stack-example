@@ -18,10 +18,10 @@ source .venv/bin/activate
 # Upgrade pip
 pip install --upgrade pip
 
-# Install dependencies
+# Install dependencies (including shared milvus-upload module used by run_example.sh)
 echo ""
 echo "Installing dependencies..."
-pip install -r requirements.txt
+pip install -r requirements.txt -r ../milvus-upload/requirements.txt
 
 echo ""
 echo "==================================="

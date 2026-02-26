@@ -141,6 +141,10 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        {{- if and .Values.providers.kubeflow.enabled .Values.providers.kubeflow.baseImage }}
+        - name: KUBEFLOW_BASE_IMAGE
+          value: {{ .Values.providers.kubeflow.baseImage | quote }}
+        {{- end }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
