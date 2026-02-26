@@ -33,6 +33,8 @@ providers:
     # Internal service URL - pipeline pods connect via cluster network (no SSL needed)
     llamaStackUrl: "http://llama-stack-example-service.llama-stack-example.svc.cluster.local:8321"
     resultsS3Prefix: "ragas-results"
+    resultsS3Endpoint: "http://minio.data-science-project.svc.cluster.local:9000"
+    resultsS3PathStyle: true
     s3CredentialsSecretName: "minio-credentials"
     # Internal service URL for DSPA (HTTP - podToPodTLS disabled in DSPA)
     pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"

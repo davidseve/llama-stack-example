@@ -172,6 +172,8 @@ providers:
       embedding_model: {{ .Values.providers.ragas.embeddingModel }}
       kubeflow_config:
         results_s3_prefix: {{ .Values.providers.kubeflow.resultsS3Prefix }}
+        results_s3_endpoint: {{ .Values.providers.kubeflow.resultsS3Endpoint | default "http://minio.data-science-project.svc.cluster.local:9000" }}
+        results_s3_path_style: {{ .Values.providers.kubeflow.resultsS3PathStyle | default true }}
         s3_credentials_secret_name: {{ .Values.providers.kubeflow.s3CredentialsSecretName }}
         pipelines_endpoint: {{ .Values.providers.kubeflow.pipelinesEndpoint }}
         namespace: {{ .Values.providers.kubeflow.namespace }}
