@@ -141,6 +141,10 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        {{- if .Values.providers.kubeflow.enabled }}
+        - name: KUBEFLOW_BASE_IMAGE
+          value: {{ .Values.providers.kubeflow.baseImage | quote }}
+        {{- end }}
       {{- if .Values.server.externalProviders }}
       command:
         - /bin/sh

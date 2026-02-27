@@ -2,80 +2,100 @@
   {
     "id": "millbrook_001",
     "question": "How many residents does the city of Millbrook have and in what year was it incorporated?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to that information.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "Millbrook has 47,832 residents and was incorporated in 1892.",
     "difficulty": "easy"
   },
   {
     "id": "millbrook_002",
     "question": "What is Dr. Elena Vasquez's current position and at what institution does she work?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to Dr. Elena Vasquez's current position and institution information.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "Dr. Elena Vasquez is Chief of Cardiology and Director of Millbrook General Hospital, located at 1247 Medical Plaza Dr., Riverside District.",
     "difficulty": "easy"
   },
   {
     "id": "millbrook_003",
     "question": "What languages does Dr. Elena Vasquez speak and what is her native language?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to Dr. Elena Vasquez information.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "Dr. Elena Vasquez speaks Spanish (native), English (fluent), and Portuguese (conversational).",
     "difficulty": "medium"
   },
   {
     "id": "millbrook_004",
     "question": "What are the contradictory figures mentioned about Bridge 7's load capacity?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to information about Bridge 7's load capacity.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "The document presents contradictory information about Bridge 7's load capacity: 25 tons (current), 40 tons (original), and 15-ton restrictions.",
     "difficulty": "medium"
   },
   {
     "id": "millbrook_005",
     "question": "What does Sofia Okafor's PE license mean and what license numbers does she have?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to Sofia Okafor's license information.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "Sofia Okafor's PE license means Professional Engineer. She holds PE license #89472 from Texas and PE license #67821 from California, which allow her to practice engineering and sign engineering documents.",
     "difficulty": "medium"
   },
   {
     "id": "millbrook_006",
     "question": "How are Carmen Vasquez and Emmanuel Okafor connected through their families?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to information about Carmen Vasquez and Emmanuel Okafor being related.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "Carmen Vasquez is the daughter of Dr. Elena Vasquez and Emmanuel Okafor is the son of Dr. Kwame Okafor. Their mothers work together at Millbrook General Hospital, where Elena is Hospital Director and Kwame is a pediatrician. Carmen and Emmanuel are friends.",
     "difficulty": "hard"
   },
   {
     "id": "millbrook_007",
     "question": "What languages are mixed in the code-switching conversation at the bakery and who uses each one?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to information about specific conversations or code-switching at a bakery. However, code-switching is a common phenomenon in multilingual communities where speakers switch between languages in a single conversation. \n\nIn general, code-switching can involve any two or more languages, and the choice of language often depends on factors such as the speaker's linguistic background, the context of the conversation, and the relationship between the speakers. \n\nIf you're interested in learning more about code-switching or multilingualism, I'd be happy to provide more information or point you in the direction of relevant resources.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "The bakery conversation features multiple code-switching: Ahmed mixes Arabic ('أهلاً وسهلاً' and 'المجتمع يجب أن يعرف') with English; Dr. Vasquez mixes Spanish ('Gracias' and 'Para los pacientes cardíacos') with English; Marcus mixes English with Mandarin ('你明白吗？'); and Isabella mixes Italian ('Scusi' and 'questi ponti vengono e vanno') with Spanish/English.",
     "difficulty": "hard"
   },
   {
     "id": "millbrook_008",
     "question": "What is the daily economic impact of the bridge situation according to the document?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "The daily economic impact of the bridge situation is not specified in the available functions. However, I can tell you that the economic impacts of bridge disruptions can vary widely depending on factors such as the bridge's location, traffic volume, and the nature of the disruption. \n\nIf you have more context or details about the bridge situation you're referring to, I may be able to provide a more specific answer or suggest where you might find the information you're looking for.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "The document mentions an economic impact of $47,000 per day, although commercial impact estimates of 25-35% are also cited.",
     "difficulty": "medium"
   },
   {
     "id": "millbrook_009",
     "question": "What are the specific technical reasons why Bridge 7 needs immediate attention according to the engineering report?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "I don't have access to Bridge 7 engineering report information.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "The technical reasons include: 15.3cm pylon displacement, load capacity reduced to 65%, micro-fracturing, and an 18% reduction in natural frequency. These factors support the council's concern about an 8-14 month failure timeline and the need for immediate $2.3 million intervention.",
     "difficulty": "hard"
   },
   {
     "id": "millbrook_010",
     "question": "What medical concerns are mentioned regarding the bridge construction and what health professionals are involved in the planning?",
-    "answer": "ERROR: Error code: 500 - {'error': {'detail': 'Internal server error: An unexpected error occurred.'}}",
-    "contexts": [],
+    "answer": "The function provided earlier seems to be malfunctioning. I will try to provide an answer using my internal knowledge.\n\nThe construction of bridges can pose several medical concerns, including the risk of accidents and injuries to workers, as well as potential environmental health impacts. Health professionals involved in the planning of bridge construction may include occupational health and safety specialists, environmental health experts, and epidemiologists. These professionals can help identify potential health risks and develop strategies to mitigate them.\n\nHowever, I don't have specific information on the medical concerns and health professionals involved in a particular bridge construction project. If you have more details about the project, I may be able to provide a more specific answer.",
+    "contexts": [
+      "No context retrieved"
+    ],
     "ground_truth": "The main concerns are increased emergency response times (+4.7 minutes) affecting cardiac patients. Dr. Elena Vasquez (Hospital Director) and Rebecca Martinez (Emergency Nursing Manager) are involved in planning alternative routes and weekly progress reviews.",
     "difficulty": "hard"
   }

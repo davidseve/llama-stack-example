@@ -37,7 +37,7 @@ providers:
     # Internal service URL for DSPA (HTTP - podToPodTLS disabled in DSPA)
     pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
-    baseImage: "registry.access.redhat.com/ubi9/python-312:latest"
+    baseImage: "python:3.12-slim"
     sslVerify: false
 
 # MCP Server endpoints
