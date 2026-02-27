@@ -18,7 +18,7 @@ providers:
   - provider_id: {{ $name }}-vllm-inference
     provider_type: remote::vllm
     config:
-      url: {{ $vllm.url }}
+      base_url: {{ $vllm.url }}
       max_tokens: {{ $vllm.maxTokens | default "4096" }}
       api_token: ${env.{{ $vllm.apiTokenSecret | default "VLLM_API_TOKEN" }}:=fake}
       tls_verify: {{ $vllm.tlsVerify | default "true" }}
@@ -27,7 +27,7 @@ providers:
   - provider_id: {{ $name }}-vllm-embedding
     provider_type: remote::vllm
     config:
-      url: {{ $embed.url }}
+      base_url: {{ $embed.url }}
       api_token: ${env.{{ $embed.apiTokenSecret | default "VLLM_API_TOKEN" }}:=fake}
       tls_verify: {{ $embed.tlsVerify | default "true" }}
 {{- end }}
