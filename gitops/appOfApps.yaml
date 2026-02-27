@@ -46,6 +46,9 @@ spec:
           data:
             LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}
             KUBEFLOW_PIPELINES_TOKEN: ${KUBEFLOW_PIPELINES_TOKEN}
+            AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+            AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
   syncPolicy:
     automated:
       prune: true

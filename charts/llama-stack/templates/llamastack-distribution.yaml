@@ -59,6 +59,13 @@ spec:
               key: AWS_SESSION_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        {{- if .Values.secret.data.AWS_DEFAULT_REGION }}
+        - name: AWS_DEFAULT_REGION
+          valueFrom:
+            secretKeyRef:
+              key: AWS_DEFAULT_REGION
+              name: {{ .Values.global.name }}-secret
+        {{- end }}
         # WatsonX API Key
         {{- if .Values.secret.data.WATSONX_API_KEY }}
         - name: WATSONX_API_KEY
