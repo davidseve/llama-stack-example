@@ -161,7 +161,9 @@ providers:
         pipelines_endpoint: {{ .Values.providers.kubeflow.pipelinesEndpoint }}
         namespace: {{ .Values.providers.kubeflow.namespace }}
         llama_stack_url: {{ .Values.providers.kubeflow.llamaStackUrl }}
+        {{- if .Values.providers.kubeflow.baseImage }}
         base_image: {{ .Values.providers.kubeflow.baseImage }}
+        {{- end }}
         pipelines_api_token: ${env.KUBEFLOW_PIPELINES_TOKEN:=}
       kvstore:
         namespace: ragas_remote
