@@ -128,7 +128,7 @@ def register_dataset(
     """
     # Unregister dataset if it already exists
     try:
-        client.datasets.unregister(dataset_id)
+        client.beta.datasets.unregister(dataset_id)
         # print(f"  ℹ️  Unregistered existing dataset: {dataset_id}")
     except Exception:
         pass  # Dataset doesn't exist, which is fine
@@ -140,7 +140,7 @@ def register_dataset(
     # Use the correct API format for llama-stack-client
     # Purpose: 'eval/question-answer' for RAGAS evaluation
     # Source: rows data source with the evaluation data
-    client.datasets.register(
+    client.beta.datasets.register(
         purpose="eval/question-answer",
         source={
             "type": "rows",
@@ -174,21 +174,15 @@ def register_benchmark(
     print(f"   Provider: {provider_id}")
     print(f"   Metrics: {', '.join(metrics)}")
     
-    # Use SDK's internal HTTP client to register benchmark
-    url = f"{client.base_url}/v1alpha/eval/benchmarks"
-    payload = {
-        "benchmark_id": benchmark_id,
-        "dataset_id": dataset_id,
-        "scoring_functions": metrics,
-        "provider_id": provider_id
-    }
-    
     try:
-        response = client._client.post(url, json=payload)
-        response.raise_for_status()
+        client.alpha.benchmarks.register(
+            benchmark_id=benchmark_id,
+            dataset_id=dataset_id,
+            scoring_functions=metrics,
+            provider_id=provider_id,
+        )
         print(f"✓ Benchmark registered successfully")
     except Exception as e:
-        # Benchmark might already exist, which is OK
         if "already exists" in str(e).lower():
             print(f"  ℹ️  Benchmark already registered")
         else:
