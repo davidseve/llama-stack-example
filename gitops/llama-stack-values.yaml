@@ -50,3 +50,4 @@ server:
     image: docker.io/llamastack/distribution-starter:0.5.1
   externalProviders:
     - "llama-stack-provider-ragas[remote]>=0.6.0"
+    - "pymilvus[milvus_lite]"
