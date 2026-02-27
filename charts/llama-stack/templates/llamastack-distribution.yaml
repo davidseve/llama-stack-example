@@ -148,10 +148,17 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        {{/* WORKAROUND: KUBEFLOW_BASE_IMAGE - Override the operator's default base image for KFP pods.
+             Needed because the operator injects an outdated ragas-runner image that has permission issues.
+             Uncomment if using an upstream starter image that doesn't set this correctly.
         {{- if .Values.providers.kubeflow.enabled }}
         - name: KUBEFLOW_BASE_IMAGE
           value: {{ .Values.providers.kubeflow.baseImage | quote }}
         {{- end }}
+        */}}
+        {{/* WORKAROUND: pip install external providers at startup.
+             Needed because distribution-starter:0.5.1 doesn't pre-install external providers
+             like llama-stack-provider-ragas. Uncomment if the image doesn't include them.
       {{- if .Values.server.externalProviders }}
       command:
         - /bin/sh
@@ -161,6 +168,7 @@ spec:
           pip install --quiet --no-cache-dir {{ range .Values.server.externalProviders }}{{ . }} {{ end }}&& \
           exec uvicorn llama_stack.core.server.server:create_app --host 0.0.0.0 --port "${LLS_PORT:-{{ .Values.server.containerSpec.port }}}" --workers "${LLS_WORKERS:-1}" --factory
       {{- end }}
+        */}}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:

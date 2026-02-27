@@ -1,5 +1,9 @@
 version: 2
-distro_name: starter
+# distro_name must match the distribution used in the server image.
+# Use "starter" for upstream docker.io/llamastack/distribution-starter images (LLS >=0.5.0).
+# Use "rh" (via image_name) for RHOAI images (LLS 0.4.x).
+# Omit if the operator or image sets it automatically.
+#distro_name: starter
 apis:
 - agents
 - batches

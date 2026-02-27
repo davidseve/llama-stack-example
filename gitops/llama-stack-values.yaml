@@ -48,5 +48,6 @@ mcpServers:
 server:
   distribution:
     image: docker.io/llamastack/distribution-starter:0.5.1
-  externalProviders:
-    - "llama-stack-provider-ragas[remote]>=0.6.0"
+  # WORKAROUND: uncomment to pip-install providers not included in the image
+  # externalProviders:
+  #   - "llama-stack-provider-ragas[remote]>=0.6.0"
