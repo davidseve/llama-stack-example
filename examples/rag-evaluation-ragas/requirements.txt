@@ -1,5 +1,5 @@
-# Llama Stack SDK for API interaction
-llama-stack-client>=0.3.3
+# Llama Stack SDK for API interaction (LLS 0.5.x)
+llama-stack-client>=0.5.0
 
 # OpenAI client for compatibility with Llama Stack
 openai>=1.0.0
@@ -7,7 +7,7 @@ openai>=1.0.0
 # HTTP client with SSL support
 httpx>=0.25.0
 
-# RAGAS evaluation framework (for inline provider)
+# RAGAS evaluation framework
 ragas>=0.1.0
 
 # Data handling

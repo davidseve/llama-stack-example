@@ -13,7 +13,7 @@ spec:
     namespace: data-science-project
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: ragas-remote-v0.6
     path: charts/minio
     helm: 
       valueFiles: 

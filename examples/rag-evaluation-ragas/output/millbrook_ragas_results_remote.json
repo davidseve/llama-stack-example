@@ -1,13 +1,13 @@
 {
-  "benchmark_id": "ragas_benchmark_batch_run_20260226_164646",
-  "timestamp": "2026-02-26T16:46:49.265665",
+  "benchmark_id": "ragas_benchmark_batch_run_20260226_172102",
+  "timestamp": "2026-02-26T17:21:08.621199",
   "metrics": {},
   "individual_scores": {},
   "generations": [],
   "failures": [
     {
       "batch_index": 1,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "How many residents does the city of Millbrook have and in what year was it incorporated?",
@@ -30,7 +30,7 @@
     },
     {
       "batch_index": 2,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What is Dr. Elena Vasquez's current position and at what institution does she work?",
@@ -53,7 +53,7 @@
     },
     {
       "batch_index": 3,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What languages does Dr. Elena Vasquez speak and what is her native language?",
@@ -76,7 +76,7 @@
     },
     {
       "batch_index": 4,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What are the contradictory figures mentioned about Bridge 7's load capacity?",
@@ -99,7 +99,7 @@
     },
     {
       "batch_index": 5,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What does Sofia Okafor's PE license mean and what license numbers does she have?",
@@ -122,7 +122,7 @@
     },
     {
       "batch_index": 6,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "How are Carmen Vasquez and Emmanuel Okafor connected through their families?",
@@ -145,7 +145,7 @@
     },
     {
       "batch_index": 7,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What languages are mixed in the code-switching conversation at the bakery and who uses each one?",
@@ -168,7 +168,7 @@
     },
     {
       "batch_index": 8,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What is the daily economic impact of the bridge situation according to the document?",
@@ -191,7 +191,7 @@
     },
     {
       "batch_index": 9,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What are the specific technical reasons why Bridge 7 needs immediate attention according to the engineering report?",
@@ -214,7 +214,7 @@
     },
     {
       "batch_index": 10,
-      "error": "Client error '400 Bad Request' for url 'https://llama-stack-example-llama-stack-example.apps.ocp.sandbox3846.opentlc.com/v1alpha/eval/benchmarks'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400",
+      "error": "Error code: 500 - {'detail': 'Internal server error: An unexpected error occurred.'}",
       "data": [
         {
           "user_input": "What medical concerns are mentioned regarding the bridge construction and what health professionals are involved in the planning?",

@@ -1,5 +1,5 @@
 version: 2
-image_name: rh
+distro_name: starter
 apis:
 - agents
 - batches
@@ -161,8 +161,9 @@ providers:
     module: llama_stack_provider_ragas.inline
     config:
       embedding_model: {{ .Values.providers.ragas.embeddingModel }}
-      default_max_tokens: {{ .Values.providers.ragas.defaultMaxTokens | default "2048" }}
-      default_temperature: {{ .Values.providers.ragas.defaultTemperature | default "0.1" }}
+      kvstore:
+        namespace: ragas_inline
+        backend: kv_default
 {{- end }}
 {{- if .Values.providers.kubeflow.enabled }}
   - provider_id: trustyai_ragas_remote
@@ -171,13 +172,18 @@ providers:
     config:
       embedding_model: {{ .Values.providers.ragas.embeddingModel }}
       kubeflow_config:
+        results_s3_endpoint: {{ .Values.providers.kubeflow.resultsS3Endpoint }}
         results_s3_prefix: {{ .Values.providers.kubeflow.resultsS3Prefix }}
+        results_s3_path_style: {{ .Values.providers.kubeflow.resultsS3PathStyle | default false }}
         s3_credentials_secret_name: {{ .Values.providers.kubeflow.s3CredentialsSecretName }}
         pipelines_endpoint: {{ .Values.providers.kubeflow.pipelinesEndpoint }}
         namespace: {{ .Values.providers.kubeflow.namespace }}
         llama_stack_url: {{ .Values.providers.kubeflow.llamaStackUrl }}
         base_image: {{ .Values.providers.kubeflow.baseImage }}
         pipelines_api_token: ${env.KUBEFLOW_PIPELINES_TOKEN:=}
+      kvstore:
+        namespace: ragas_remote
+        backend: kv_default
 {{- end }}
   datasetio:
   - provider_id: huggingface

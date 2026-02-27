@@ -161,22 +161,22 @@ providers:
       useK8s: "true"
       baseUrl: ""  # e.g., "http://vllm-server:8000/v1"
 
-  # RAGAS configuration
+  # RAGAS configuration (provider v0.6.0+)
   ragas:
     embeddingModel: ""
-    defaultMaxTokens: "2048"
-    defaultTemperature: "0.1"
 
-  # Kubeflow configuration
+  # Kubeflow configuration (provider v0.6.0+)
   kubeflow:
     enabled: false
     llamaStackUrl: ""
     resultsS3Prefix: ""
+    resultsS3Endpoint: ""
+    resultsS3PathStyle: false
     s3CredentialsSecretName: ""
     pipelinesEndpoint: ""
     namespace: ""
     baseImage: ""
-    sslVerify: false  # Use false with podToPodTLS: false in DSPA
+    sslVerify: false
 
   # Telemetry configuration
   telemetry:

@@ -20,7 +20,7 @@ spec:
     namespace: {{ .Values.global.namespace }}
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: ragas-remote-v0.6
     path: charts/postgress
     helm:
       valueFiles:

@@ -13,7 +13,7 @@ spec:
   source: 
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: ragas-remote-v0.6
     helm:
       valueFiles:
       - ../values-common.yaml
@@ -39,9 +39,9 @@ spec:
             enabled: true
         providers:
           kubeflow:
-            enabled: false
-            # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
-            llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox1467.opentlc.com"     
+            enabled: true
+            # Internal service URL - pipeline pods can reach Llama Stack via cluster DNS
+            llamaStackUrl: "http://llama-stack-example-service.llama-stack-example.svc.cluster.local:8321"     
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}

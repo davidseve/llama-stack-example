@@ -14,11 +14,9 @@ providers:
       tlsVerify: "false"
       apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"
   
-  # RAGAS Provider for RAG evaluation metrics
+  # RAGAS Provider for RAG evaluation metrics (v0.6.0+)
   ragas:
     embeddingModel: "sentence-transformers/ibm-granite/granite-embedding-125m-english"
-    defaultMaxTokens: "2048"
-    defaultTemperature: "0.1"
   postgres:
     enabled: true
     host: "postgres.llama-stack-example.svc.cluster.local"
@@ -26,25 +24,27 @@ providers:
     secretName: "postgres-secret"  # K8s secret containing POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
    
-  # Kubeflow/DSPA configuration for ragas-remote
-  # Ref: https://github.com/opendatahub-io/llama-stack-provider-ragas/blob/main/demos/llama-stack-openshift/README.md
+  # Kubeflow/DSPA configuration for ragas-remote (provider v0.6.0+)
+  # Ref: https://github.com/trustyai-explainability/llama-stack-provider-ragas
   kubeflow:
-    enabled: false
-    # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
-    llamaStackUrl: "https://llama-stack-example-llama-stack-example.apps.ocp.sandbox5296.opentlc.com"
-    resultsS3Prefix: "ragas-results"
+    enabled: true
+    # Internal service URL - pipeline pods reach Llama Stack via cluster DNS
+    llamaStackUrl: "http://llama-stack-example-service.llama-stack-example.svc.cluster.local:8321"
+    resultsS3Prefix: "s3://mlpipeline/ragas-results"
+    resultsS3Endpoint: "http://minio.data-science-project.svc.cluster.local:9000"
+    resultsS3PathStyle: true
     s3CredentialsSecretName: "minio-credentials"
     # Internal service URL for DSPA (HTTP - podToPodTLS disabled in DSPA)
     pipelinesEndpoint: "http://ds-pipeline-dspa.data-science-project.svc.cluster.local:8888"
     namespace: "data-science-project"
-    baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
-    sslVerify: false  # Use false with podToPodTLS: false in DSPA TODO verify if it works or not
+    baseImage: "registry.access.redhat.com/ubi9/python-312:latest"
+    sslVerify: false
 
 # MCP Server endpoints
 mcpServers:
   openshift:
     uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/sse"
 
-# server:
-#   distribution:
-#     image: registry.redhat.io/rhoai/odh-llama-stack-core-rhel9:v2.25
+server:
+  distribution:
+    image: docker.io/llamastack/distribution-starter:0.5.1
