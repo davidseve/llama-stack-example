@@ -124,17 +124,9 @@ providers:
         namespace: vector_io::milvus_remote
 {{- end }}
   safety:
-    - provider_id: trustyai_fms
-      provider_type: remote::trustyai_fms
-      module: llama_stack_provider_trustyai_fms==0.3.2
-      config:
-        {{- if .Values.providers.fms.orchestratorUrl }}
-        orchestrator_url: {{ .Values.providers.fms.orchestratorUrl }}
-        {{- end }}
-        {{- if .Values.providers.fms.sslCertPath }}
-        ssl_cert_path: {{ .Values.providers.fms.sslCertPath }}
-        {{- end }}
-        shields: {}
+  - provider_id: llama-guard
+    provider_type: inline::llama-guard
+    config: {}
   agents:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
@@ -149,12 +141,6 @@ providers:
           max_write_queue_size: 10000
           num_writers: 4
   eval:
-  - provider_id: trustyai_lmeval
-    provider_type: remote::trustyai_lmeval
-    module: llama_stack_provider_lmeval==0.2.4
-    config:
-        use_k8s: {{ .Values.providers.trustyai.lmeval.useK8s }}
-        base_url: {{ .Values.providers.trustyai.lmeval.baseUrl | default "http://localhost:8000/v1" }}
 {{- if .Values.providers.ragas.embeddingModel }}
   - provider_id: trustyai_ragas_inline
     provider_type: inline::trustyai_ragas
