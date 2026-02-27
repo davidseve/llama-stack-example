@@ -83,13 +83,6 @@ providers:
       base_url: {{ .Values.providers.openai.baseUrl }}
 {{- end }}
   vector_io:
-  - provider_id: milvus
-    provider_type: inline::milvus
-    config:
-      db_path: /opt/app-root/src/.llama/distributions/rh/milvus.db
-      persistence:
-        backend: kv_default
-        namespace: vector_io::milvus
 {{- if .Values.providers.faiss.enabled }}
   - provider_id: faiss
     provider_type: inline::faiss
