@@ -67,6 +67,12 @@ server:
   distribution: {}
   #   image: quay.io/opendatahub/llama-stack:odh
 
+  # External providers to install via pip before server starts
+  # Only needed when using an upstream image that doesn't pre-install providers
+  externalProviders: []
+  #   - "llama-stack-provider-ragas[remote]>=0.6.0"
+  #   - "llama-stack-provider-trustyai-fms==0.3.2"
+
   # Storage configuration
   storage:
     size: 5Gi

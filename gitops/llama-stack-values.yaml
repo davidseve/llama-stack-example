@@ -48,3 +48,7 @@ mcpServers:
 server:
   distribution:
     image: docker.io/llamastack/distribution-starter:0.5.1
+  externalProviders:
+    - "llama-stack-provider-ragas[remote]>=0.6.0"
+    - "llama-stack-provider-trustyai-fms==0.3.2"
+    - "llama-stack-provider-lmeval==0.2.4"

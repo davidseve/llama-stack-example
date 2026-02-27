@@ -141,6 +141,15 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+      {{- if .Values.server.externalProviders }}
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - |
+          pip install --quiet --no-cache-dir {{ range .Values.server.externalProviders }}{{ . }} {{ end }}&& \
+          exec uvicorn llama_stack.core.server.server:create_app --host 0.0.0.0 --port "${LLS_PORT:-{{ .Values.server.containerSpec.port }}}" --workers "${LLS_WORKERS:-1}" --factory
+      {{- end }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:
