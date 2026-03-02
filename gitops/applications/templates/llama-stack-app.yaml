@@ -31,6 +31,7 @@ spec:
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: {{ .Values.secret.data.LLAMA_4_SCOUT_API_TOKEN | default "" | quote }}
+            GRANITE_GUARDIAN_API_TOKEN: {{ .Values.secret.data.GRANITE_GUARDIAN_API_TOKEN | default "" | quote }}
             {{- if .Values.secret.data.KUBEFLOW_PIPELINES_TOKEN }}
             KUBEFLOW_PIPELINES_TOKEN: {{ .Values.secret.data.KUBEFLOW_PIPELINES_TOKEN | quote }}
             {{- end }}

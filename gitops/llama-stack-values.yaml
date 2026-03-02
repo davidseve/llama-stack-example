@@ -13,7 +13,13 @@ providers:
       maxTokens: "4096"
       tlsVerify: "false"
       apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"
-  
+    granite-guardian:
+      modelId: "granite3-guardian-2b"
+      url: "https://granite3-guardian-2b-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
+      maxTokens: "4096"
+      tlsVerify: "false"
+      apiTokenSecret: "GRANITE_GUARDIAN_API_TOKEN"
+
   # RAGAS Provider for RAG evaluation metrics
   ragas:
     embeddingModel: "sentence-transformers/ibm-granite/granite-embedding-125m-english"
@@ -44,6 +50,11 @@ providers:
 mcpServers:
   openshift:
     uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/sse"
+
+# Guardrails configuration
+guardrails:
+  enabled: true
+  guardianModel: "granite3-guardian-2b"
 
 # server:
 #   distribution:

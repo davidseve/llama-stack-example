@@ -32,19 +32,24 @@ Use this option when you want to consume models from an external provider (e.g.,
    export LLAMA_4_SCOUT_API_TOKEN="<your_token>"
    ```
 
-2. (Optional) For RAGAS remote evaluation with Kubeflow Pipelines, export your user token:
+2. (Optional) For guardrails with Granite Guardian, export the guardian token:
+   ```bash
+   export GRANITE_GUARDIAN_API_TOKEN="<your_guardian_token>"
+   ```
+
+3. (Optional) For RAGAS remote evaluation with Kubeflow Pipelines, export your user token:
    ```bash
    export KUBEFLOW_PIPELINES_TOKEN="$(oc whoami -t)"
    ```
    > ⚠️ **Note**: This token expires (~24h). You'll need to renew it periodically.
 
-3. Deploy using GitOps (OpenShift GitOps):
+4. Deploy using GitOps (OpenShift GitOps):
    ```bash
    envsubst < gitops/appOfApps.yaml | oc apply -f -
    ```
 
 **Notes:**
-- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}` and `${KUBEFLOW_PIPELINES_TOKEN}` before sending to `oc`.
+- `envsubst` replaces `${LLAMA_4_SCOUT_API_TOKEN}`, `${GRANITE_GUARDIAN_API_TOKEN}`, and `${KUBEFLOW_PIPELINES_TOKEN}` before sending to `oc`.
 - Ensure the correct project/namespace is configured in the manifest, or use `-n <namespace>` with `oc apply` if needed.
 - See [DSPA SSL Configuration](./docs/DSPA-SSL-CONFIGURATION.md) for details on RAGAS remote evaluation setup.
 
@@ -112,4 +117,25 @@ Complete workflow to evaluate RAG systems using RAGAS metrics (answer_relevancy,
 ```bash
 cd examples/rag-evaluation-ragas
 ./run_example.sh
+```
+
+### 3. Guardrails with Granite Guardian
+
+**[guardrails-simple](./examples/guardrails-simple/README.md)**
+
+Tests safety guardrails using **Granite Guardian 3.1 2B** as a direct safety model via Llama Stack's `inline::llama-guard` provider and the Responses API. No external orchestrator or detector services needed -- just the guardian model served as a vLLM endpoint.
+
+Validates input/output safety checks for harmful content, jailbreak attempts, and passthrough behavior when guardrails are disabled.
+
+```bash
+cd examples/guardrails-simple
+./run_example.sh
+```
+
+To enable guardrails on your deployment, set in your Helm values:
+
+```yaml
+guardrails:
+  enabled: true
+  guardianModel: "granite3-guardian-2b"
 ```

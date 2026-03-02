@@ -13,7 +13,7 @@ spec:
   source: 
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: guardrails-simple
     helm:
       valueFiles:
       - ../values-common.yaml
@@ -45,6 +45,7 @@ spec:
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: ${LLAMA_4_SCOUT_API_TOKEN}
+            GRANITE_GUARDIAN_API_TOKEN: ${GRANITE_GUARDIAN_API_TOKEN}
             KUBEFLOW_PIPELINES_TOKEN: ${KUBEFLOW_PIPELINES_TOKEN}
   syncPolicy:
     automated:
