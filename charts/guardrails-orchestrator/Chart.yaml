@@ -1,0 +1,11 @@
+apiVersion: v2
+name: guardrails-orchestrator
+description: A Helm chart for TrustyAI Guardrails Orchestrator
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - guardrails
+  - trustyai
+  - safety
+  - llama-stack

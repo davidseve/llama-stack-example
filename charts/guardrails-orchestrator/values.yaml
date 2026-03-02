@@ -1,0 +1,34 @@
+# Guardrails Orchestrator configuration
+global:
+  namespace: llama-stack-example
+
+orchestrator_gateway:
+  enabled: true
+
+replicas: 1
+
+# Detector service hostnames (override per-environment)
+detectors:
+  chunker:
+    hostname: ""
+    port: 8085
+  openai:
+    hostname: ""
+    port: 8080
+  regex:
+    hostname: "127.0.0.1"
+    port: 8080
+  hap:
+    hostname: ""
+    port: 8000
+  prompt_injection:
+    hostname: ""
+    port: 8000
+  language_detection:
+    hostname: ""
+    port: 8000
+
+# Gateway configuration
+gateway:
+  regex_patterns:
+    - '(?i).*fight club.*'

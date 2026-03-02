@@ -1,0 +1,46 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: fms-orchestr8-config-nlp
+data:
+  config.yaml: |
+    chunkers:
+      sentence:
+        type: sentence
+        service:
+            hostname: {{ .Values.detectors.chunker.hostname | default (printf "chunker-service.%s.svc.cluster.local" .Values.global.namespace) }}
+            port: {{ .Values.detectors.chunker.port }}
+    openai:
+        service:
+          hostname: {{ .Values.detectors.openai.hostname | default (printf "llama-32-predictor.%s.svc.cluster.local" .Values.global.namespace) }}
+          port: {{ .Values.detectors.openai.port }}
+    detectors:
+      regex_competitor:
+        type: text_contents
+        service:
+            hostname: {{ .Values.detectors.regex.hostname | quote }}
+            port: {{ .Values.detectors.regex.port }}
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5
+      hap:
+        type: text_contents
+        service:
+          hostname: {{ .Values.detectors.hap.hostname | default (printf "guardrails-detector-ibm-hap-predictor.%s.svc.cluster.local" .Values.global.namespace) }}
+          port: {{ .Values.detectors.hap.port }}
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5
+      prompt_injection:
+        type: text_contents
+        service:
+          hostname: {{ .Values.detectors.prompt_injection.hostname | default (printf "prompt-injection-detector-predictor.%s.svc.cluster.local" .Values.global.namespace) }}
+          port: {{ .Values.detectors.prompt_injection.port }}
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5
+      language_detection:
+        type: text_contents
+        service:
+          hostname: {{ .Values.detectors.language_detection.hostname | default (printf "language-detector-predictor.%s.svc.cluster.local" .Values.global.namespace) }}
+          port: {{ .Values.detectors.language_detection.port }}
+        chunker_id: whole_doc_chunker
+        default_threshold: 0.5

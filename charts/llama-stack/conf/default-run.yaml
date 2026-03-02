@@ -7,6 +7,9 @@ apis:
 - eval
 - inference
 - safety
+{{- if .Values.guardrails.enabled }}
+- shields
+{{- end }}
 - scoring
 # - telemetry
 - tool_runtime
@@ -126,15 +129,58 @@ providers:
   safety:
     - provider_id: trustyai_fms
       provider_type: remote::trustyai_fms
-      module: llama_stack_provider_trustyai_fms==0.3.2
       config:
-        {{- if .Values.providers.fms.orchestratorUrl }}
+        {{- if .Values.guardrails.enabled }}
+        orchestrator_url: {{ .Values.guardrails.orchestratorUrl }}
+        verify_ssl: {{ .Values.guardrails.verifySsl }}
+        {{- else if .Values.providers.fms.orchestratorUrl }}
         orchestrator_url: {{ .Values.providers.fms.orchestratorUrl }}
         {{- end }}
         {{- if .Values.providers.fms.sslCertPath }}
         ssl_cert_path: {{ .Values.providers.fms.sslCertPath }}
         {{- end }}
+        {{- if .Values.guardrails.enabled }}
+        shields:
+          {{- if .Values.guardrails.regex.enabled }}
+          regex:
+            detectors:
+              regex_competitor:
+                detector_params:
+                  regex: [{{- range $i, $f := .Values.guardrails.regex.filter }}{{ if $i }}, {{ end }}{{ $f | quote }}{{- end }}]
+            type: content
+            confidence_threshold: 0.5
+            message_types: ["user", "system", "completion"]
+          {{- end }}
+          {{- if .Values.guardrails.hap.enabled }}
+          hap:
+            type: content
+            confidence_threshold: 0.5
+            message_types: ["user", "system", "completion"]
+            detectors:
+              hap:
+                detector_params: {}
+          {{- end }}
+          {{- if .Values.guardrails.language_detection.enabled }}
+          language_detection:
+            type: content
+            confidence_threshold: 0.5
+            message_types: ["user", "system", "completion"]
+            detectors:
+              language_detection:
+                detector_params: {}
+          {{- end }}
+          {{- if .Values.guardrails.prompt_injection.enabled }}
+          prompt_injection:
+            type: content
+            confidence_threshold: 0.5
+            message_types: ["user", "system", "completion"]
+            detectors:
+              prompt_injection:
+                detector_params: {}
+          {{- end }}
+        {{- else }}
         shields: {}
+        {{- end }}
   agents:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
@@ -322,7 +368,27 @@ registered_resources:
     provider_id: {{ $name }}-vllm-embedding
     model_type: embedding
   {{- end }}
-  shields: []
+  shields:
+{{- if .Values.guardrails.enabled }}
+  {{- if .Values.guardrails.regex.enabled }}
+  - shield_id: regex
+    provider_id: trustyai_fms
+  {{- end }}
+  {{- if .Values.guardrails.hap.enabled }}
+  - shield_id: hap
+    provider_id: trustyai_fms
+  {{- end }}
+  {{- if .Values.guardrails.prompt_injection.enabled }}
+  - shield_id: prompt_injection
+    provider_id: trustyai_fms
+  {{- end }}
+  {{- if .Values.guardrails.language_detection.enabled }}
+  - shield_id: language_detection
+    provider_id: trustyai_fms
+  {{- end }}
+{{- else }}
+  []
+{{- end }}
   vector_dbs:
   {{- range $name, $vdb := .Values.vectorDbs }}
   - vector_db_id: {{ $name }}
@@ -347,6 +413,9 @@ registered_resources:
     mcp_endpoint:
       uri: {{ $mcp.uri }}
   {{- end }}
+{{- if .Values.guardrails.enabled }}
+external_providers_dir: /opt/app-root/src/.llama/providers.d/
+{{- end }}
 telemetry:
   enabled: true
 server:

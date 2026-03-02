@@ -192,6 +192,21 @@ providers:
   tavilySearch:
     maxResults: 3
 
+# Guardrails configuration (requires guardrails-orchestrator deployed separately)
+guardrails:
+  enabled: false
+  orchestratorUrl: "https://guardrails-orchestrator:8080"
+  verifySsl: false
+  regex:
+    enabled: false
+    filter: ["(?i).*Bomb.*"]
+  hap:
+    enabled: false
+  prompt_injection:
+    enabled: false
+  language_detection:
+    enabled: false
+
 # MCP Servers configuration (map)
 # key becomes toolgroup_id as "mcp::{key}"
 mcpServers: {}

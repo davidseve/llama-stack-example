@@ -26,3 +26,6 @@ applications:
 
   dspa:
     enabled: true
+
+  guardrailsOrchestrator:
+    enabled: false

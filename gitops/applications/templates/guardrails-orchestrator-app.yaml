@@ -1,0 +1,26 @@
+{{- if .Values.applications.guardrailsOrchestrator.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: guardrails-orchestrator
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: "8"
+spec:
+  destination:
+    namespace: {{ .Values.global.namespace }}
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    path: charts/guardrails-orchestrator
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+      - ../../gitops/values-common.yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+{{- end }}
