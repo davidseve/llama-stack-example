@@ -195,7 +195,7 @@ providers:
 # Guardrails configuration (uses inline::llama-guard with a guardian model served via vLLM)
 guardrails:
   enabled: false
-  guardianModel: ""  # model_id of the guardian model (must match a providers.vllm entry's modelId)
+  guardianModelKey: ""  # key name of the guardian model in providers.vllm (e.g., "granite-guardian")
 
 # MCP Servers configuration (map)
 # key becomes toolgroup_id as "mcp::{key}"

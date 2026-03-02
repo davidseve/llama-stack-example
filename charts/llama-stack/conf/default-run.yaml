@@ -332,7 +332,9 @@ registered_resources:
   {{- end }}
   shields:
 {{- if .Values.guardrails.enabled }}
-  - shield_id: {{ .Values.guardrails.guardianModel }}
+  {{- $guardianKey := .Values.guardrails.guardianModelKey }}
+  {{- $guardianVllm := index .Values.providers.vllm $guardianKey }}
+  - shield_id: {{ $guardianKey }}-vllm-inference/{{ $guardianVllm.modelId }}
     provider_id: llama-guard
 {{- else }}
   []

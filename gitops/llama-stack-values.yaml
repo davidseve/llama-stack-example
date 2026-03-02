@@ -54,7 +54,7 @@ mcpServers:
 # Guardrails configuration
 guardrails:
   enabled: true
-  guardianModel: "granite3-guardian-2b"
+  guardianModelKey: "granite-guardian"
 
 # server:
 #   distribution:

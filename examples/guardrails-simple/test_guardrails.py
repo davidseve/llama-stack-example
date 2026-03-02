@@ -46,75 +46,87 @@ TEST_CASES = {
 
 
 def send_request(client, model, prompt, shield_id=None, instructions="You are a helpful assistant."):
-    """Send a request via Responses API. Returns (text, violation_message)."""
-    extra_body = {"guardrails": [shield_id]} if shield_id else None
+    """Send a request via Responses API using raw httpx streaming to avoid
+    Python 3.14 typing.Union compatibility issues in the SDK's event parser."""
+    import json as _json
 
-    try:
-        response = client.responses.create(
-            model=model,
-            instructions=instructions,
-            input=[{"role": "user", "content": prompt, "type": "message"}],
-            temperature=0.1,
-            stream=True,
-            extra_body=extra_body,
-        )
-    except Exception as e:
-        error_str = str(e)
-        if "safety" in error_str.lower() or "violation" in error_str.lower() or "shield" in error_str.lower() or "unsafe" in error_str.lower():
-            return None, f"Safety violation: {error_str}"
-        return None, f"Request error: {e}"
+    payload = {
+        "model": model,
+        "input": [{"role": "user", "content": prompt, "type": "message"}],
+        "instructions": instructions,
+        "temperature": 0.1,
+        "stream": True,
+    }
+    if shield_id:
+        payload["guardrails"] = [shield_id]
+
+    base_url = str(client.base_url).rstrip("/")
+    url = f"{base_url}/v1/responses"
+    http = getattr(client, "_http", None) or getattr(client, "_client", None)
+    if http is None:
+        import httpx
+        http = httpx.Client(verify=False, timeout=300)
 
     collected_text = []
     violation_message = None
 
     try:
-        for event in response:
-            event_type = getattr(event, "type", None)
+        with http.stream("POST", url, json=payload) as resp:
+            if resp.status_code != 200:
+                body = resp.read().decode()
+                return None, f"HTTP {resp.status_code}: {body[:300]}"
 
-            # Check for server-side errors surfaced via model_extra (e.g. shield not found)
-            extra = getattr(event, "model_extra", None) or {}
-            if "error" in extra:
-                err_info = extra["error"]
-                error_msg = err_info.get("message", str(err_info)) if isinstance(err_info, dict) else str(err_info)
-                violation_message = error_msg
-                break
+            for line in resp.iter_lines():
+                line = line.strip()
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[len("data: "):]
+                if data_str == "[DONE]":
+                    break
 
-            if event_type == "response.output_text.delta":
-                delta = getattr(event, "delta", "")
-                if delta:
-                    collected_text.append(delta)
+                try:
+                    event = _json.loads(data_str)
+                except _json.JSONDecodeError:
+                    continue
 
-            elif event_type == "response.failed":
-                error_msg = "Response generation failed"
-                if hasattr(event, "response") and event.response:
-                    err = getattr(event.response, "error", None)
-                    if err:
-                        error_msg = getattr(err, "message", None) or str(err)
-                violation_message = error_msg
-                break
+                event_type = event.get("type")
 
-            elif event_type == "response.completed":
-                if hasattr(event, "response") and event.response:
-                    resp = event.response
-                    if getattr(resp, "status", None) == "failed":
+                if "error" in event:
+                    err = event["error"]
+                    error_msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                    violation_message = error_msg
+                    break
+
+                if event_type == "response.output_text.delta":
+                    delta = event.get("delta", "")
+                    if delta:
+                        collected_text.append(delta)
+
+                elif event_type == "response.failed":
+                    error_msg = "Response generation failed"
+                    r = event.get("response", {})
+                    if r and r.get("error"):
+                        error_msg = r["error"].get("message", str(r["error"]))
+                    violation_message = error_msg
+                    break
+
+                elif event_type == "response.completed":
+                    r = event.get("response", {})
+                    if r.get("status") == "failed":
                         error_msg = "Content blocked by safety guardrails"
-                        if hasattr(resp, "error") and resp.error:
-                            error_msg = getattr(resp.error, "message", error_msg)
+                        if r.get("error"):
+                            error_msg = r["error"].get("message", error_msg)
                         violation_message = error_msg
-                    elif hasattr(resp, "output") and resp.output:
-                        for output_msg in resp.output:
-                            content = getattr(output_msg, "content", None) or []
-                            for item in content:
-                                refusal = getattr(item, "refusal", None)
-                                if refusal:
-                                    violation_message = refusal
-                                    break
-                            if violation_message:
+                    for output_msg in r.get("output", []):
+                        for item in output_msg.get("content", []):
+                            if item.get("type") == "refusal":
+                                violation_message = item.get("refusal", "Blocked by safety guardrails")
                                 break
+                        if violation_message:
+                            break
+
     except Exception as e:
         error_str = str(e)
-        if "safety" in error_str.lower() or "violation" in error_str.lower() or "unsafe" in error_str.lower():
-            return None, f"Safety violation: {error_str}"
         if collected_text:
             violation_message = f"Stream error after partial response: {error_str}"
         else:
@@ -183,8 +195,10 @@ def main():
         os.environ["CURL_CA_BUNDLE"] = ""
 
     import httpx
-    http_client = httpx.Client(verify=args.verify_ssl)
+    http_client = httpx.Client(verify=args.verify_ssl, timeout=300)
     client = LlamaStackClient(base_url=args.url, http_client=http_client)
+    client.base_url = args.url
+    client._http = http_client
 
     tests_to_run = {}
     if args.test_only:
