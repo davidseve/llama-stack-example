@@ -94,6 +94,11 @@ def send_request(client, model, prompt, shield_id=None, instructions="You are a 
                 if "error" in event:
                     err = event["error"]
                     error_msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                    # Granite Guardian returns "Yes" (unsafe) or "No" (safe).
+                    # inline::llama-guard can't parse these, returning
+                    # "Unexpected response: No" for safe and "Unexpected response: Yes" for unsafe.
+                    if "Unexpected response: No" in error_msg:
+                        break  # safe -- not a violation
                     violation_message = error_msg
                     break
 
@@ -107,6 +112,8 @@ def send_request(client, model, prompt, shield_id=None, instructions="You are a 
                     r = event.get("response", {})
                     if r and r.get("error"):
                         error_msg = r["error"].get("message", str(r["error"]))
+                    if "Unexpected response: No" in error_msg:
+                        break
                     violation_message = error_msg
                     break
 
@@ -116,6 +123,8 @@ def send_request(client, model, prompt, shield_id=None, instructions="You are a 
                         error_msg = "Content blocked by safety guardrails"
                         if r.get("error"):
                             error_msg = r["error"].get("message", error_msg)
+                        if "Unexpected response: No" in error_msg:
+                            break
                         violation_message = error_msg
                     for output_msg in r.get("output", []):
                         for item in output_msg.get("content", []):
@@ -175,7 +184,7 @@ def main():
     parser = argparse.ArgumentParser(description="Test Llama Stack guardrails via Responses API (Granite Guardian)")
     parser.add_argument("--url", default=os.environ.get("LLAMA_STACK_URL", ""), help="Llama Stack base URL")
     parser.add_argument("--model", default=os.environ.get("MODEL_ID", ""), help="LLM model ID for generation")
-    parser.add_argument("--shield", default=os.environ.get("SHIELD_ID", "granite3-guardian-2b"), help="Shield ID (guardian model ID)")
+    parser.add_argument("--shield", default=os.environ.get("SHIELD_ID", "granite-guardian-vllm-inference/granite3-guardian-2b"), help="Shield ID (guardian model ID)")
     parser.add_argument("--test-only", nargs="*", default=None, help="Only run these test names")
     parser.add_argument("--verify-ssl", action="store_true", default=False, help="Verify SSL certificates")
     parser.add_argument("--verbose", action="store_true", default=False, help="Show full response text")

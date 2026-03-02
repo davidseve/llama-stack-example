@@ -21,7 +21,7 @@ fi
 
 LLAMA_STACK_URL="${LLAMA_STACK_URL:-${REMOTE_BASE_URL:-}}"
 MODEL_ID="${MODEL_ID:-${INFERENCE_MODEL_ID:-}}"
-SHIELD_ID="${SHIELD_ID:-granite3-guardian-2b}"
+SHIELD_ID="${SHIELD_ID:-granite-guardian-vllm-inference/granite3-guardian-2b}"
 VERIFY_SSL="${VERIFY_SSL:-false}"
 
 if [ -z "$LLAMA_STACK_URL" ]; then

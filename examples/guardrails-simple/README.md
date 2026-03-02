@@ -23,8 +23,8 @@ served as a vLLM endpoint.
 
 ```bash
 export LLAMA_STACK_URL="https://your-llama-stack-route.example.com"
-export MODEL_ID="your-llm-model-id"
-export SHIELD_ID="granite3-guardian-2b"
+export MODEL_ID="llama-4-scout-vllm-inference/llama-4-scout-17b-16e-w4a16"
+export SHIELD_ID="granite-guardian-vllm-inference/granite3-guardian-2b"
 
 ./run_example.sh
 ```

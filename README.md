@@ -137,5 +137,5 @@ To enable guardrails on your deployment, set in your Helm values:
 ```yaml
 guardrails:
   enabled: true
-  guardianModel: "granite3-guardian-2b"
+  guardianModelKey: "granite-guardian"  # must match a key in providers.vllm
 ```
