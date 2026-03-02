@@ -7,6 +7,9 @@ apis:
 - eval
 - inference
 - safety
+{{- if .Values.guardrails.enabled }}
+- shields
+{{- end }}
 - scoring
 # - telemetry
 - tool_runtime
@@ -135,6 +138,11 @@ providers:
         ssl_cert_path: {{ .Values.providers.fms.sslCertPath }}
         {{- end }}
         shields: {}
+{{- if .Values.guardrails.enabled }}
+    - provider_id: llama-guard
+      provider_type: inline::llama-guard
+      config: {}
+{{- end }}
   agents:
   - provider_id: meta-reference
     provider_type: inline::meta-reference
@@ -322,7 +330,15 @@ registered_resources:
     provider_id: {{ $name }}-vllm-embedding
     model_type: embedding
   {{- end }}
-  shields: []
+  shields:
+{{- if .Values.guardrails.enabled }}
+  {{- $guardianKey := .Values.guardrails.guardianModelKey }}
+  {{- $guardianVllm := index .Values.providers.vllm $guardianKey }}
+  - shield_id: {{ $guardianKey }}-vllm-inference/{{ $guardianVllm.modelId }}
+    provider_id: llama-guard
+{{- else }}
+  []
+{{- end }}
   vector_dbs:
   {{- range $name, $vdb := .Values.vectorDbs }}
   - vector_db_id: {{ $name }}
