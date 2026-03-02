@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -48,103 +49,145 @@ TEST_CASES = {
 }
 
 
+def _parse_sse_events(raw_lines):
+    """Yield parsed SSE data dicts from raw response lines."""
+    buf = []
+    for line in raw_lines:
+        stripped = line.strip()
+        if stripped.startswith("data:"):
+            payload = stripped[len("data:"):].strip()
+            if payload and payload != "[DONE]":
+                buf.append(payload)
+        elif stripped == "" and buf:
+            try:
+                yield json.loads("".join(buf))
+            except json.JSONDecodeError:
+                pass
+            buf = []
+    if buf:
+        try:
+            yield json.loads("".join(buf))
+        except json.JSONDecodeError:
+            pass
+
+
+def _interpret_guardian_error(error_msg):
+    """Classify Granite Guardian verdicts embedded in server error messages.
+
+    Returns: (is_safe: bool, violation_message: str|None)
+    """
+    if "Unexpected response: No" in error_msg:
+        return True, None
+    return False, error_msg
+
+
 def send_with_guardrails(client, model, prompt, shield_id=None,
                          instructions="You are a helpful assistant."):
-    """Call LLM via Responses API with optional guardrails (same pattern as backend).
+    """Call LLM via Responses API with optional server-side guardrails.
 
     When shield_id is provided, passes extra_body={"guardrails": [shield_id]}
     so the Llama Stack server applies the shield on input and output.
 
-    Granite Guardian returns 'Yes' (unsafe) or 'No' (safe). The server's
-    inline::llama-guard provider wraps this as:
-      - 'Unexpected response: Yes' -> content IS unsafe (violation)
-      - 'Unexpected response: No'  -> content is safe (not a violation)
+    For streaming with guardrails we use raw httpx to avoid a Python 3.14
+    incompatibility in llama-stack-client's SSE parser. Without guardrails
+    the SDK stream works fine and is used directly.
 
     Returns (text, violation_message).
     """
-    extra_body = {"guardrails": [shield_id]} if shield_id else None
+    body = {
+        "model": model,
+        "input": [{"role": "user", "content": prompt, "type": "message"}],
+        "instructions": instructions,
+        "temperature": 0.1,
+        "stream": True,
+    }
+    if shield_id:
+        body["guardrails"] = [shield_id]
 
-    try:
-        stream = client.responses.create(
-            model=model,
-            input=[{"role": "user", "content": prompt, "type": "message"}],
-            instructions=instructions,
-            temperature=0.1,
-            stream=True,
-            extra_body=extra_body,
-        )
-    except Exception as e:
-        return None, f"Request error: {e}"
+    if not shield_id:
+        # SDK streaming works fine without guardrails
+        try:
+            stream = client.responses.create(**body)
+        except Exception as e:
+            return None, f"Request error: {e}"
 
-    output_text_parts = []
-    violation_message = None
-
-    try:
+        output_text_parts = []
         for event in stream:
             event_type = getattr(event, "type", None)
-
-            # Server-side guardrail verdict (Granite Guardian Yes/No).
-            # The server's inline::llama-guard provider sends raw error events:
-            #   "Unexpected response: No"  -> content is SAFE
-            #   "Unexpected response: Yes" -> content is UNSAFE (violation)
-            # The SDK surfaces these in event.model_extra["error"].
-            extra = getattr(event, "model_extra", None) or {}
-            if "error" in extra:
-                err_info = extra["error"]
-                error_msg = err_info.get("message", str(err_info)) if isinstance(err_info, dict) else str(err_info)
-                if "Unexpected response: No" in error_msg:
-                    break  # safe -- guardian approved
-                violation_message = error_msg
-                break
-
             if event_type == "response.output_text.delta":
                 delta = getattr(event, "delta", "")
                 if delta:
                     output_text_parts.append(delta)
-
-            elif event_type == "response.failed":
-                error_msg = "Response generation failed"
-                if hasattr(event, "response") and hasattr(event.response, "error"):
-                    error_msg = getattr(event.response.error, "message", error_msg)
-                if "Unexpected response: No" in error_msg:
-                    break
-                violation_message = error_msg
-                break
-
             elif event_type == "response.completed":
                 if hasattr(event, "response"):
                     resp = event.response
                     if hasattr(resp, "output") and resp.output:
                         for output_msg in resp.output:
                             if hasattr(output_msg, "content") and output_msg.content:
-                                for content_item in output_msg.content:
-                                    refusal = None
-                                    if isinstance(content_item, dict):
-                                        refusal = content_item.get("refusal") if content_item.get("type") == "refusal" else None
-                                    else:
-                                        refusal = getattr(content_item, "refusal", None)
+                                for ci in output_msg.content:
+                                    refusal = ci.get("refusal") if isinstance(ci, dict) else getattr(ci, "refusal", None)
                                     if refusal:
-                                        violation_message = refusal
-                                        break
-                            if violation_message:
-                                break
-                    if hasattr(resp, "status") and resp.status == "failed":
-                        error_msg = "Content blocked by safety guardrails"
-                        if hasattr(resp, "error") and resp.error:
-                            error_msg = getattr(resp.error, "message", error_msg)
-                        if "Unexpected response: No" not in error_msg:
-                            violation_message = error_msg
+                                        return "".join(output_text_parts), refusal
+        return "".join(output_text_parts), None
 
+    # With guardrails: raw httpx streaming to dodge the typing.Union SDK bug
+    http_client = client._client  # underlying httpx.Client
+    try:
+        with http_client.stream(
+            "POST",
+            f"{client.base_url}/v1/responses",
+            json=body,
+        ) as resp:
+            resp.raise_for_status()
+            raw_lines = list(resp.iter_lines())
     except Exception as e:
-        error_str = str(e)
-        if "Unexpected response: No" in error_str:
-            pass  # safe -- guardian approved, SDK threw on parsing
-        elif "Unexpected response: Yes" in error_str:
-            violation_message = error_str
-        elif output_text_parts:
-            violation_message = f"Stream error after partial response: {error_str}"
-        else:
-            return None, f"Stream error: {error_str}"
+        return None, f"Request error: {e}"
+
+    output_text_parts = []
+    violation_message = None
+
+    for event_data in _parse_sse_events(raw_lines):
+        event_type = event_data.get("type", "")
+
+        if "error" in event_data:
+            err = event_data["error"]
+            msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+            is_safe, viol = _interpret_guardian_error(msg)
+            if not is_safe:
+                violation_message = viol
+            break
+
+        if event_type == "response.output_text.delta":
+            delta = event_data.get("delta", "")
+            if delta:
+                output_text_parts.append(delta)
+
+        elif event_type == "response.failed":
+            msg = "Response generation failed"
+            resp_obj = event_data.get("response", {})
+            err_obj = resp_obj.get("error", {})
+            if isinstance(err_obj, dict) and "message" in err_obj:
+                msg = err_obj["message"]
+            is_safe, viol = _interpret_guardian_error(msg)
+            if not is_safe:
+                violation_message = viol
+            break
+
+        elif event_type == "response.completed":
+            resp_obj = event_data.get("response", {})
+            for out in resp_obj.get("output", []):
+                for ci in out.get("content", []):
+                    if ci.get("type") == "refusal" and ci.get("refusal"):
+                        violation_message = ci["refusal"]
+                        break
+                if violation_message:
+                    break
+            if resp_obj.get("status") == "failed":
+                err_obj = resp_obj.get("error", {})
+                msg = err_obj.get("message", "Blocked by guardrails") if isinstance(err_obj, dict) else str(err_obj)
+                is_safe, viol = _interpret_guardian_error(msg)
+                if not is_safe:
+                    violation_message = viol
 
     return "".join(output_text_parts), violation_message
 
