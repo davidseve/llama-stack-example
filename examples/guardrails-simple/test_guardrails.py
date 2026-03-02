@@ -5,19 +5,24 @@ Guardrails Simple Test Suite for Llama Stack
 End-to-end test demonstrating Granite Guardian 3.1 2B as a safety layer
 protecting llama-4-scout responses via the Llama Stack APIs:
 
-  1. Input check   - Call guardian model via Chat Completions API
-  2. LLM response  - Call llama-4-scout via Responses API
+  1. Input check   - Call guardian model via Responses API (non-streaming)
+  2. LLM response  - Call llama-4-scout via Responses API (streaming)
   3. Output check  - Call guardian model on the LLM's response
+
+Uses the llama-stack-client SDK following the same patterns as
+rag-mcp-chatbot and rag-evaluation-ragas examples.
 
 Usage:
     python test_guardrails.py --url <LLAMA_STACK_URL> --model <MODEL_ID> --guardian <GUARDIAN_MODEL_ID>
-    python test_guardrails.py --url <URL> --model <MODEL> --guardian <GUARDIAN> --test-only safe
+    python test_guardrails.py --url <URL> --model <MODEL> --guardian <GUARDIAN> --test-only safe --verbose
 """
 
 import argparse
-import json
 import os
 import sys
+
+import httpx
+from llama_stack_client import LlamaStackClient
 
 
 TEST_CASES = {
@@ -48,81 +53,70 @@ TEST_CASES = {
 }
 
 
-def check_safety(http, base_url, guardian_model, message):
-    """Call Granite Guardian via Chat Completions API.
-    Granite Guardian expects role='user' -- for output checks we wrap
-    the LLM response so the guardian evaluates it as user-provided text.
+def check_safety(client, guardian_model, message):
+    """Call Granite Guardian via Chat Completions API (SDK).
+    Guardian returns 'Yes' (unsafe) or 'No' (safe).
     Returns (is_safe: bool, raw_verdict: str)."""
-    payload = {
-        "model": guardian_model,
-        "messages": [{"role": "user", "content": message}],
-        "temperature": 0.0,
-        "max_tokens": 10,
-    }
-    r = http.post(f"{base_url}/v1/chat/completions", json=payload)
-    if r.status_code != 200:
-        return None, f"HTTP {r.status_code}: {r.text[:200]}"
-
-    data = r.json()
-    content = data["choices"][0]["message"]["content"].strip()
-    is_safe = content.lower().startswith("no")
-    return is_safe, content
+    try:
+        response = client.chat.completions.create(
+            model=guardian_model,
+            messages=[{"role": "user", "content": message}],
+            temperature=0.0,
+            max_tokens=10,
+        )
+        verdict = response.choices[0].message.content.strip()
+        is_safe = verdict.lower().startswith("no")
+        return is_safe, verdict
+    except Exception as e:
+        return None, f"Error: {e}"
 
 
-def call_llm(http, base_url, model, prompt, instructions="You are a helpful assistant."):
-    """Call the LLM via Responses API (streaming). Returns (text, error)."""
-    payload = {
-        "model": model,
-        "input": [{"role": "user", "content": prompt, "type": "message"}],
-        "instructions": instructions,
-        "temperature": 0.1,
-        "stream": True,
-    }
+def call_llm_streaming(client, model, prompt, instructions="You are a helpful assistant."):
+    """Call the LLM via Responses API with streaming (same pattern as chatbot.py).
+    Returns (text, error)."""
+    try:
+        stream = client.responses.create(
+            model=model,
+            input=prompt,
+            instructions=instructions,
+            stream=True,
+        )
 
-    collected_text = []
-    error_msg = None
+        output_text_parts = []
+        error_msg = None
 
-    with http.stream("POST", f"{base_url}/v1/responses", json=payload) as resp:
-        if resp.status_code != 200:
-            body = resp.read().decode()
-            return None, f"HTTP {resp.status_code}: {body[:300]}"
-
-        for line in resp.iter_lines():
-            line = line.strip()
-            if not line or not line.startswith("data: "):
-                continue
-            data_str = line[len("data: "):]
-            if data_str == "[DONE]":
-                break
-
-            try:
-                event = json.loads(data_str)
-            except json.JSONDecodeError:
-                continue
-
-            event_type = event.get("type")
-
-            if "error" in event:
-                err = event["error"]
-                error_msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
-                break
+        for event in stream:
+            event_type = getattr(event, "type", "")
 
             if event_type == "response.output_text.delta":
-                delta = event.get("delta", "")
+                delta = getattr(event, "delta", "")
                 if delta:
-                    collected_text.append(delta)
+                    output_text_parts.append(delta)
+
+            elif event_type == "response.completed":
+                final_response = getattr(event, "response", None)
+                if final_response:
+                    status = getattr(final_response, "status", None)
+                    if status == "failed":
+                        err = getattr(final_response, "error", None)
+                        error_msg = getattr(err, "message", "Response failed") if err else "Response failed"
 
             elif event_type == "response.failed":
-                r = event.get("response", {})
+                final_response = getattr(event, "response", None)
                 error_msg = "Response generation failed"
-                if r.get("error"):
-                    error_msg = r["error"].get("message", str(r["error"]))
-                break
+                if final_response:
+                    err = getattr(final_response, "error", None)
+                    if err:
+                        error_msg = getattr(err, "message", str(err))
 
-    return "".join(collected_text), error_msg
+        text = "".join(output_text_parts)
+        return text, error_msg
+
+    except Exception as e:
+        return None, f"Error: {e}"
 
 
-def run_test(http, base_url, model, guardian_model, test_name, test_case, verbose=False):
+def run_test(client, model, guardian_model, test_name, test_case, verbose=False):
     """Run a single end-to-end test. Returns True if passed."""
     description = test_case["description"]
     prompt = test_case["prompt"]
@@ -139,12 +133,14 @@ def run_test(http, base_url, model, guardian_model, test_name, test_case, verbos
 
     # --- Step 1: Input safety check (if guardian enabled) ---
     if use_guardian:
-        is_safe, verdict = check_safety(http, base_url, guardian_model, prompt)
+        is_safe, verdict = check_safety(client, guardian_model, prompt)
         print(f"  [Guardian INPUT]  verdict={verdict!r}  safe={is_safe}")
 
         if is_safe is None:
             print(f"  [ERROR] Guardian call failed: {verdict}")
-            return not expect_blocked  # fail if we expected a block
+            passed = not expect_blocked
+            print(f"  Status: [{'PASS' if passed else 'FAIL'}]")
+            return passed
 
         if not is_safe:
             print(f"  [BLOCKED] Input rejected by guardian")
@@ -152,20 +148,22 @@ def run_test(http, base_url, model, guardian_model, test_name, test_case, verbos
             print(f"  Status: [{'PASS' if passed else 'FAIL'}]")
             return passed
 
-    # --- Step 2: Call LLM ---
-    print(f"  [LLM] Calling {model}...")
-    text, error = call_llm(http, base_url, model, prompt)
+    # --- Step 2: Call LLM via Responses API (streaming) ---
+    print(f"  [LLM] Calling {model} (streaming)...")
+    text, error = call_llm_streaming(client, model, prompt)
 
     if error:
         print(f"  [ERROR] LLM call failed: {error}")
-        return expect_blocked
+        passed = expect_blocked
+        print(f"  Status: [{'PASS' if passed else 'FAIL'}]")
+        return passed
 
     preview = (text or "")[:120]
     print(f"  [LLM] Response: {preview}{'...' if len(text or '') > 120 else ''}")
 
     # --- Step 3: Output safety check (if guardian enabled) ---
     if use_guardian and text:
-        is_safe_out, verdict_out = check_safety(http, base_url, guardian_model, text)
+        is_safe_out, verdict_out = check_safety(client, guardian_model, text)
         print(f"  [Guardian OUTPUT] verdict={verdict_out!r}  safe={is_safe_out}")
 
         if is_safe_out is not None and not is_safe_out:
@@ -187,7 +185,7 @@ def run_test(http, base_url, model, guardian_model, test_name, test_case, verbos
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Test Llama Stack guardrails: Granite Guardian + llama-4-scout via Llama Stack APIs"
+        description="Test Llama Stack guardrails: Granite Guardian + llama-4-scout via llama-stack-client SDK"
     )
     parser.add_argument("--url", default=os.environ.get("LLAMA_STACK_URL", ""),
                         help="Llama Stack base URL")
@@ -217,9 +215,8 @@ def main():
         os.environ["SSL_CERT_FILE"] = ""
         os.environ["CURL_CA_BUNDLE"] = ""
 
-    import httpx
-    http = httpx.Client(verify=args.verify_ssl, timeout=300)
-    base_url = args.url.rstrip("/")
+    http_client = httpx.Client(verify=args.verify_ssl, timeout=300)
+    client = LlamaStackClient(base_url=args.url, http_client=http_client)
 
     tests_to_run = {}
     if args.test_only:
@@ -239,8 +236,8 @@ def main():
     # Pre-flight: verify both models are registered
     print(f"\n--- Pre-flight check ---")
     try:
-        r = http.get(f"{base_url}/v1/models")
-        model_ids = [m["identifier"] for m in r.json().get("data", r.json())]
+        models = client.models.list()
+        model_ids = [getattr(m, "identifier", None) or getattr(m, "id", None) for m in models]
         print(f"Registered models: {model_ids}")
 
         if args.model not in model_ids:
@@ -251,8 +248,7 @@ def main():
                 print(f"  Running passthrough test only (no guardian)...")
                 tests_to_run = {"passthrough": TEST_CASES["passthrough"]}
         else:
-            # Quick smoke test on guardian
-            is_safe, verdict = check_safety(http, base_url, args.guardian, "Hello")
+            is_safe, verdict = check_safety(client, args.guardian, "Hello")
             print(f"Guardian smoke test: verdict={verdict!r} safe={is_safe}")
             if is_safe is None:
                 print(f"WARNING: Guardian not responding correctly. Check API token.")
@@ -261,7 +257,7 @@ def main():
 
     results = {}
     for test_name, test_case in tests_to_run.items():
-        passed = run_test(http, base_url, args.model, args.guardian, test_name, test_case, verbose=args.verbose)
+        passed = run_test(client, args.model, args.guardian, test_name, test_case, verbose=args.verbose)
         results[test_name] = passed
 
     print(f"\n{'='*70}")
