@@ -1,7 +1,7 @@
 #!/bin/bash
 # Guardrails Simple Test -- Granite Guardian 3.1 2B
-# End-to-end test: Guardian checks input/output safety,
-# llama-4-scout generates responses, all via Llama Stack APIs.
+# Uses client.responses.create() with extra_body={"guardrails": [shield_id]}
+# so the Llama Stack server handles input/output safety checks.
 
 set -e
 
@@ -21,7 +21,7 @@ fi
 
 LLAMA_STACK_URL="${LLAMA_STACK_URL:-${REMOTE_BASE_URL:-}}"
 MODEL_ID="${MODEL_ID:-${INFERENCE_MODEL_ID:-}}"
-GUARDIAN_MODEL_ID="${GUARDIAN_MODEL_ID:-granite-guardian-vllm-inference/granite3-guardian-2b}"
+SHIELD_ID="${SHIELD_ID:-granite-guardian-vllm-inference/granite3-guardian-2b}"
 VERIFY_SSL="${VERIFY_SSL:-false}"
 
 if [ -z "$LLAMA_STACK_URL" ]; then
@@ -44,11 +44,11 @@ source "$SCRIPT_DIR/.venv/bin/activate"
 pip install -q -r "$SCRIPT_DIR/requirements.txt"
 
 echo "======================================================================"
-echo "GUARDRAILS SIMPLE TEST -- Granite Guardian + Llama-4-Scout"
+echo "GUARDRAILS SIMPLE TEST -- Granite Guardian Shield + Llama-4-Scout"
 echo "======================================================================"
 echo "Llama Stack URL:  $LLAMA_STACK_URL"
-echo "LLM Model:        $MODEL_ID"
-echo "Guardian Model:   $GUARDIAN_MODEL_ID"
+echo "Model:            $MODEL_ID"
+echo "Shield:           $SHIELD_ID"
 echo "Verify SSL:       $VERIFY_SSL"
 echo "======================================================================"
 echo ""
@@ -61,6 +61,6 @@ fi
 python "$SCRIPT_DIR/test_guardrails.py" \
     --url "$LLAMA_STACK_URL" \
     --model "$MODEL_ID" \
-    --guardian "$GUARDIAN_MODEL_ID" \
+    --shield "$SHIELD_ID" \
     $SSL_FLAG \
     "$@"
