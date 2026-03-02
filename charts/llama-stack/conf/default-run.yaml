@@ -18,7 +18,7 @@ providers:
   - provider_id: {{ $name }}-vllm-inference
     provider_type: remote::vllm
     config:
-      url: {{ $vllm.url }}
+      base_url: {{ $vllm.url }}
       max_tokens: {{ $vllm.maxTokens | default "4096" }}
       api_token: ${env.{{ $vllm.apiTokenSecret | default "VLLM_API_TOKEN" }}:=fake}
       tls_verify: {{ $vllm.tlsVerify | default "true" }}
@@ -347,6 +347,13 @@ registered_resources:
     mcp_endpoint:
       uri: {{ $mcp.uri }}
   {{- end }}
+{{- if .Values.providers.milvus.enabled }}
+# Required for file_search in /v1/responses API (prevents silent AttributeError in tool_executor.py)
+vector_stores:
+  default_embedding_model:
+    provider_id: {{ .Values.providers.embeddingModel.providerId | default "sentence-transformers" }}
+    model_id: {{ .Values.providers.embeddingModel.modelId | default "ibm-granite/granite-embedding-125m-english" }}
+{{- end }}
 telemetry:
   enabled: true
 server:

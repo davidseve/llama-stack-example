@@ -128,8 +128,7 @@ def register_dataset(
     """
     # Unregister dataset if it already exists
     try:
-        client.datasets.unregister(dataset_id)
-        # print(f"  ℹ️  Unregistered existing dataset: {dataset_id}")
+        client.beta.datasets.unregister(dataset_id)
     except Exception:
         pass  # Dataset doesn't exist, which is fine
     
@@ -137,10 +136,8 @@ def register_dataset(
     print(f"📝 Registering dataset: {dataset_id}")
     print(f"   Entries: {len(ragas_data)}")
     
-    # Use the correct API format for llama-stack-client
-    # Purpose: 'eval/question-answer' for RAGAS evaluation
-    # Source: rows data source with the evaluation data
-    client.datasets.register(
+    # client.beta.datasets for llama-stack-client >=0.4.x
+    client.beta.datasets.register(
         purpose="eval/question-answer",
         source={
             "type": "rows",

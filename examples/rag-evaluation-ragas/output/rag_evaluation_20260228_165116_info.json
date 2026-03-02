@@ -1,0 +1,11 @@
+{
+  "vector_store_id": "vs_3b5d8fcf-fd5a-4c03-af8b-0d74e1ab70ca",
+  "store_name": "rag_evaluation_20260228_165116",
+  "documents_count": 10,
+  "chunks_count": 0,
+  "chunk_size": 2000,
+  "chunk_overlap": 200,
+  "embedding_model": "sentence-transformers/ibm-granite/granite-embedding-125m-english",
+  "embedding_dimension": 768,
+  "timestamp": "2026-02-28T16:51:42.241733"
+}

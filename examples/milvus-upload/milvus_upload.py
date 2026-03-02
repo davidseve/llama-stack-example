@@ -504,7 +504,7 @@ def insert_chunks_with_vector_io(
         
         try:
             llama_client.vector_io.insert(
-                vector_db_id=vector_store_id,
+                vector_store_id=vector_store_id,
                 chunks=formatted_chunks
             )
             total_inserted += len(batch)
@@ -549,7 +549,7 @@ def verify_insertion(
     
     try:
         results = llama_client.vector_io.query(
-            vector_db_id=vector_store_id,
+            vector_store_id=vector_store_id,
             query=query,
             params={"max_chunks": 5}
         )

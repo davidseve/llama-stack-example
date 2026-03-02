@@ -1,0 +1,267 @@
+# Error Report: RAGAS Remote Evaluation with LLS v0.4.2.1+rhai0 (RHOAI Image)
+
+**Date:** 2026-02-28
+**Reporter:** David Severia
+**Repository:** https://github.com/davidseve/llama-stack-example
+**Branch:** `ragas-rhoai-0.4.2`
+
+## Environment
+
+| Component | Version / Value |
+|---|---|
+| RHOAI | OpenShift AI Self-Managed 2.25.2 |
+| LLS Image | `quay.io/opendatahub/llama-stack:rhoai-v3.3-latest` |
+| LLS Version (in image) | `0.4.2.1+rhai0` |
+| llama-stack-provider-ragas (in image) | `0.5.1` |
+| llama-stack-client (local) | `0.4.5` |
+| Cluster | `apps.dev.rhoai.rh-aiservices-bu.com` |
+| Namespace | `ragas-remote-test` |
+
+## Objective
+
+Test RAGAS **remote** evaluation (via DSPA/Kubeflow Pipelines) using the official RHOAI Llama Stack image `quay.io/opendatahub/llama-stack:rhoai-v3.3-latest`.
+
+## Result: FAILED
+
+RAGAS remote evaluation is **not functional** with this image. **6 blocking issues** were encountered at the infrastructure, API, and pipeline levels.
+
+---
+
+## Blocking Issue 1: LLS Operator Startup Command Incompatible with rhoai-v3.3 Image
+
+**Severity:** Critical (LLS cannot start)
+
+The LLS Operator on RHOAI 2.25.2 generates this startup command for the pod:
+
+```
+python3 -m llama_stack.core.server.server
+```
+
+This fails immediately because `llama_stack.core.server.server` in v0.4.2.1+rhai0 does **not** have a `__main__` entry point. The correct startup command for this image is:
+
+```
+llama stack run /etc/llama-stack/run.yaml --port 8321
+```
+
+**Pod log:**
+```
+Determined llama-stack version 0.4.2.1+rhai0, llama-stack version is greater than or equal to 0.2.17
+using new module path llama_stack.core.server.server to start the server
+```
+Then `CrashLoopBackOff`.
+
+**Workaround:** Bypassed the LLS Operator entirely by creating a manual Kubernetes `Deployment` with the correct `command` and `args`.
+
+---
+
+## Blocking Issue 2: vLLM Provider Config Parameter Mismatch
+
+**Severity:** Critical (LLS cannot start)
+
+The vLLM remote inference provider in LLS v0.4.2.1+rhai0 expects `base_url` in `config.yaml`, but the Helm chart generates `url`.
+
+**Error:**
+```
+ValueError: You must provide a URL in config.yaml (or via the VLLM_URL environment variable) to use vLLM.
+```
+
+**Root cause (from source inspection in the image):**
+```python
+# /opt/app-root/lib64/python3.12/site-packages/llama_stack/providers/remote/inference/vllm/config.py
+class VLLMInferenceAdapterConfig(BaseModel):
+    base_url: str = Field(default="", description="The base URL for the vLLM server")
+```
+
+**Fix applied:** Changed `url` to `base_url` in `charts/llama-stack/conf/default-run.yaml`.
+
+---
+
+## Blocking Issue 3: Default KFP Pipeline Base Image Not Accessible
+
+**Severity:** Critical (RAGAS remote pipeline cannot start)
+
+When the RAGAS remote provider creates a Kubeflow Pipeline, it uses a default base image. Without `KUBEFLOW_BASE_IMAGE` environment variable set, the provider defaults to:
+
+```
+quay.io/trustyai/llama-stack-provider-ragas:latest
+```
+
+This image **cannot be pulled** from the cluster:
+
+```
+Failed to pull image "quay.io/trustyai/llama-stack-provider-ragas:latest":
+  reading manifest latest in quay.io/trustyai/llama-stack-provider-ragas:
+  unauthorized: access to the requested resource is not authorized
+```
+
+**Pipeline pod status:** `ImagePullBackOff`
+
+**Evidence:**
+```
+$ oc describe pod ragas-evaluation-pipeline-8r9vh-system-container-impl-3462473089
+Events:
+  Warning  Failed  (x3)  kubelet  Failed to pull image
+    "quay.io/trustyai/llama-stack-provider-ragas:latest":
+    unauthorized: access to the requested resource is not authorized
+```
+
+---
+
+## Blocking Issue 4: Configured RHOAI Runner Image Also Not Accessible
+
+**Severity:** Critical (RAGAS remote pipeline cannot start)
+
+The documented RHOAI runner image `quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1` (configured via `KUBEFLOW_BASE_IMAGE` env var or `base_image` in run.yaml) also cannot be pulled:
+
+```
+Failed to pull image "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1":
+  reading manifest v0.1.1 in quay.io/modh/odh-llama-stack-ragas-runner-image:
+  unauthorized: access to the requested resource is not authorized
+```
+
+**Pipeline pod status:** `ImagePullBackOff`
+
+---
+
+## Blocking Issue 5: KFP Pipeline Missing Dependencies with Generic Python Image
+
+**Severity:** Critical (RAGAS remote pipeline cannot execute)
+
+When using `python:3.12-slim` as the base image (the only publicly accessible image tested), the pipeline pod starts but immediately fails because the provider-generated pipeline code requires `pandas` and `llama_stack_client`, which are **not pre-installed** and **not installed by the pipeline setup script**.
+
+**Pipeline pod log:**
+```python
+Traceback (most recent call last):
+  File "/tmp/tmp.AbmCXzSzQF/ephemeral_component.py", line 13, in retrieve_data_from_llama_stack
+    import pandas as pd
+ModuleNotFoundError: No module named 'pandas'
+```
+
+**Pipeline code generated by the provider (extracted from pod spec):**
+```python
+def retrieve_data_from_llama_stack(
+    dataset_id: str,
+    llama_stack_base_url: str,
+    output_dataset: dsl.Output[dsl.Dataset],
+    num_examples: int = -1,
+):
+    import pandas as pd                    # <-- NOT INSTALLED
+    from llama_stack_client import LlamaStackClient  # <-- NOT INSTALLED
+
+    client = LlamaStackClient(base_url=llama_stack_base_url)
+    dataset = client.datasets.retrieve(dataset_id=dataset_id)
+    df = pd.DataFrame(dataset.source.rows)
+    df.to_json(output_dataset.path, orient="records", lines=True)
+```
+
+The KFP setup script only installs `kfp==2.15.2`, it does **not** install `pandas` or `llama_stack_client`.
+
+---
+
+## Blocking Issue 6: `/v1/responses` file_search Silently Fails When `vector_stores` Config Missing
+
+**Severity:** Critical (RAG queries return no context)
+
+When the `run.yaml` does **not** include a `vector_stores:` configuration section (which is the default for the RHOAI image), the `/v1/responses` API `file_search` tool silently fails with `status: "failed"` and `results: null`. No error is logged.
+
+**Root Cause:** In `tool_executor.py`, the `_execute_knowledge_search_via_vector_store` method accesses `self.vector_stores_config.file_search_params.header_template` without checking if `vector_stores_config` is `None`. This causes an `AttributeError` that is caught by the outer `try/except` and stored as `error_exc`, setting `has_error=True` and the tool status to `"failed"`. No error is logged because the catch block only stores the exception.
+
+**Workaround:** Add a `vector_stores:` section to `run.yaml`:
+```yaml
+vector_stores:
+  default_embedding_model:
+    provider_id: sentence-transformers
+    model_id: ibm-granite/granite-embedding-125m-english
+```
+
+After applying this fix, `file_search` works correctly:
+```json
+// BEFORE fix: file_search silently fails
+{"type": "file_search_call", "status": "failed", "results": null}
+
+// AFTER fix: file_search works with full results
+{"type": "file_search_call", "status": "completed", "results": [... 10 items ...]}
+```
+
+**Impact:** Without this workaround, all RAG answers have no context ("No context retrieved"), making RAGAS evaluation meaningless even if the remote pipeline worked.
+
+**Note:** Additionally, when multiple `vector_io` providers are configured (e.g., both `milvus` inline and `milvus-remote`), `file_search` may resolve to the wrong provider. Removing the inline `milvus` provider is recommended.
+
+---
+
+## Additional Issue: SDK/Server API Incompatibility for vector-io/insert
+
+**Severity:** Medium (affects document upload, not directly RAGAS remote)
+
+The `llama-stack-client==0.4.5` SDK sends chunks in a format that LLS v0.4.2.1+rhai0 rejects with HTTP 400:
+
+```json
+{
+  "error": {
+    "detail": {
+      "errors": [
+        {"loc": ["body","chunks",0,"chunk_metadata"], "msg": "Field required", "type": "missing"},
+        {"loc": ["body","chunks",0,"embedding"], "msg": "Field required", "type": "missing"},
+        {"loc": ["body","chunks",0,"embedding_model"], "msg": "Field required", "type": "missing"},
+        {"loc": ["body","chunks",0,"embedding_dimension"], "msg": "Field required", "type": "missing"}
+      ]
+    }
+  }
+}
+```
+
+The server expects pre-computed embeddings in each chunk, while the SDK v0.4.5 sends only text content.
+
+**Workaround:** Documents can be uploaded via `POST /v1/files` (purpose: "assistants") and then creating a vector store with `POST /v1/vector_stores` including `file_ids`, `provider_id`, and `embedding_model`. This successfully creates and indexes the documents.
+
+---
+
+## Test Execution Summary (Clean Re-run)
+
+### Steps Executed:
+
+1. **Deployed infrastructure** (MinIO, PostgreSQL, DSPA, Milvus) via Helm into `ragas-remote-test` namespace.
+2. **Deployed LLS** manually (bypassing operator due to Issue 1), with `quay.io/opendatahub/llama-stack:rhoai-v3.3-latest`, fixing `base_url` (Issue 2).
+3. **LLS health check passed:** `curl /v1/health` returned `{"status":"OK"}`.
+4. **Fixed Issue 6** by adding `vector_stores` config and removing duplicate milvus provider. After fix, `file_search` works correctly (10 contexts, accurate RAG answers).
+5. **Uploaded documents** via `/v1/files` API (workaround for SDK incompatibility with `vector-io/insert`).
+6. **Ran RAGAS remote evaluation:** `--mode remote` with working RAG.
+7. **Result:** Pipeline pods fail with `ImagePullBackOff` for `quay.io/trustyai/llama-stack-provider-ragas:latest`.
+
+### Pipeline Pod Evidence:
+
+| Test Config | Image Used | Pod Status | Error |
+|---|---|---|---|
+| No `KUBEFLOW_BASE_IMAGE` (default) | `quay.io/trustyai/llama-stack-provider-ragas:latest` | `ImagePullBackOff` | `unauthorized: access to the requested resource is not authorized` |
+| `KUBEFLOW_BASE_IMAGE=quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1` | Same | `ImagePullBackOff` | `unauthorized` |
+| `KUBEFLOW_BASE_IMAGE=python:3.12-slim` | Same | `Error` | `ModuleNotFoundError: No module named 'pandas'` |
+
+---
+
+## Recommendations
+
+1. **Publish the KFP runner image** (`quay.io/trustyai/llama-stack-provider-ragas` or `quay.io/modh/odh-llama-stack-ragas-runner-image`) as publicly accessible, or document the pull secret requirements.
+2. **Include `pip install` of `pandas` and `llama_stack_client`** in the KFP pipeline setup script generated by the provider, so it works with any Python base image.
+3. **Fix the LLS Operator** to use `llama stack run` for v0.4.x images instead of `python3 -m llama_stack.core.server.server`.
+4. **Align the vLLM config parameter name** (`url` vs `base_url`) between documentation, Helm charts, and the actual provider code.
+5. **Ensure SDK compatibility** between `llama-stack-client` versions and the `rhoai` server image for `vector-io/insert` API.
+6. **Fix `file_search` null-safety bug** in `tool_executor.py` when `vector_stores` config is not present in `run.yaml`. The code at `_execute_knowledge_search_via_vector_store` accesses `self.vector_stores_config.file_search_params` without null-checking, causing a silent `AttributeError`. Consider using `VectorStoresConfig()` defaults when the config is None.
+7. **Include `vector_stores` section** in the default RHOAI `run.yaml` template, as it is required for `file_search` to work in the Responses API.
+
+---
+
+## Cluster State (preserved for debugging)
+
+```
+Namespace: ragas-remote-test
+LLS Pod: ragas-remote-test-77cfb5fd49-lf9q6 (Running, 1/1 Ready)
+LLS Route: https://ragas-remote-test-ragas-remote-test.apps.dev.rhoai.rh-aiservices-bu.com
+LLS Health: {"status":"OK"}
+Configuration fixes applied:
+  - vector_stores config added to run.yaml
+  - Removed inline milvus provider (kept only milvus-remote)
+Vector Store: vs_0152d2ae-1326-4c1d-9ea3-49e804c70d1a (10 files, provider: milvus-remote)
+file_search via /v1/responses: WORKING (status: "completed", 10 results per query)
+RAG answers: Correct (e.g., "Millbrook has 47,832 residents, incorporated in 1892")
+Pipeline pods: ImagePullBackOff for quay.io/trustyai/llama-stack-provider-ragas:latest
+```
