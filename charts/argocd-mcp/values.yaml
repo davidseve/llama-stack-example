@@ -18,7 +18,8 @@ image:
   pullPolicy: IfNotPresent
 
 # MCP transport protocol: "http" (StreamableHTTP on /mcp) or "sse" (SSE on /sse)
-transport: http
+# llama-stack uses SSE for MCP communication, so "sse" is the default
+transport: sse
 
 imagePullSecrets: []
 nameOverride: ""

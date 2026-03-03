@@ -58,7 +58,7 @@ mcpServers:
   openshift:
     uri: "http://kubernetes-mcp-kubernetes-mcp-server.llama-stack-example.svc.cluster.local:8080/sse"
   argocd:
-    uri: "http://argocd-mcp-argocd-mcp.llama-stack-example.svc.cluster.local:3000/mcp"
+    uri: "http://argocd-mcp-argocd-mcp.llama-stack-example.svc.cluster.local:3000/sse"
 
 # Guardrails configuration
 guardrails:
