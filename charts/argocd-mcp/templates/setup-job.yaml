@@ -29,18 +29,43 @@ spec:
               set -euo pipefail
 
               ARGOCD_NS="{{ .Values.argocd.namespace }}"
-              ROUTE_NAME="{{ .Values.argocd.routeName }}"
-              SECRET_NAME="{{ .Values.argocd.secretName }}"
               CREDS_SECRET="{{ .Values.argocd.credentialsSecret }}"
               TARGET_NS="{{ .Values.global.namespace }}"
 
-              echo "Discovering ArgoCD server URL from route ${ROUTE_NAME} in ${ARGOCD_NS}..."
-              ARGOCD_HOST=$(oc get route "${ROUTE_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.spec.host}')
+              # Route candidates: user-configured first, then common defaults (deduplicated)
+              ROUTE_CANDIDATES=$(echo "{{ .Values.argocd.routeName }} openshift-gitops-server argocd-server" | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
+              # Secret candidates: user-configured first, then common defaults (deduplicated)
+              SECRET_CANDIDATES=$(echo "{{ .Values.argocd.secretName }} openshift-gitops-cluster argocd-cluster argocd-initial-admin-secret" | tr ' ' '\n' | awk '!seen[$0]++' | tr '\n' ' ')
+
+              echo "Discovering ArgoCD server URL in namespace ${ARGOCD_NS}..."
+              ARGOCD_HOST=""
+              for ROUTE_NAME in ${ROUTE_CANDIDATES}; do
+                ARGOCD_HOST=$(oc get route "${ROUTE_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.spec.host}' 2>/dev/null) || true
+                if [ -n "${ARGOCD_HOST}" ]; then
+                  echo "  Found route: ${ROUTE_NAME}"
+                  break
+                fi
+              done
+              if [ -z "${ARGOCD_HOST}" ]; then
+                echo "ERROR: No ArgoCD route found. Tried: ${ROUTE_CANDIDATES}"
+                exit 1
+              fi
               ARGOCD_URL="https://${ARGOCD_HOST}"
               echo "ArgoCD URL: ${ARGOCD_URL}"
 
-              echo "Reading admin password from secret ${SECRET_NAME}..."
-              ADMIN_PASSWORD=$(oc get secret "${SECRET_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.data.admin\.password}' | base64 -d)
+              echo "Discovering admin password secret in ${ARGOCD_NS}..."
+              ADMIN_PASSWORD=""
+              for SECRET_NAME in ${SECRET_CANDIDATES}; do
+                ADMIN_PASSWORD=$(oc get secret "${SECRET_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.data.admin\.password}' 2>/dev/null | base64 -d 2>/dev/null) || true
+                if [ -n "${ADMIN_PASSWORD}" ]; then
+                  echo "  Found secret: ${SECRET_NAME}"
+                  break
+                fi
+              done
+              if [ -z "${ADMIN_PASSWORD}" ]; then
+                echo "ERROR: No admin password secret found. Tried: ${SECRET_CANDIDATES}"
+                exit 1
+              fi
 
               echo "Authenticating with ArgoCD API..."
               RESPONSE=$(curl -sk "${ARGOCD_URL}/api/v1/session" \

@@ -65,7 +65,10 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
-# ArgoCD connection - auto-discovered by the setup Job
+# ArgoCD connection - auto-discovered by the setup Job.
+# The Job tries routeName/secretName first, then falls back to common defaults:
+#   Routes:  argocd-server, openshift-gitops-server
+#   Secrets: argocd-cluster, openshift-gitops-cluster, argocd-initial-admin-secret
 argocd:
   namespace: openshift-gitops
   routeName: argocd-server
