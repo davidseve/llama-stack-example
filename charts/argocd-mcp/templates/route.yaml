@@ -1,0 +1,21 @@
+{{- if .Values.openshift.route.enabled -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "argocd-mcp.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "argocd-mcp.labels" . | nindent 4 }}
+spec:
+  to:
+    kind: Service
+    name: {{ include "argocd-mcp.fullname" . }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- with .Values.openshift.route.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}

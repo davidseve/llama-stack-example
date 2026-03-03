@@ -1,0 +1,65 @@
+{{- if .Values.setupJob.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "argocd-mcp.fullname" . }}-setup
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "argocd-mcp.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: {{ .Values.setupJob.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "argocd-mcp.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: setup
+    spec:
+      serviceAccountName: {{ include "argocd-mcp.fullname" . }}-setup
+      restartPolicy: OnFailure
+      containers:
+        - name: setup
+          image: {{ .Values.setupJob.image }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              ARGOCD_NS="{{ .Values.argocd.namespace }}"
+              ROUTE_NAME="{{ .Values.argocd.routeName }}"
+              SECRET_NAME="{{ .Values.argocd.secretName }}"
+              CREDS_SECRET="{{ .Values.argocd.credentialsSecret }}"
+              TARGET_NS="{{ .Values.global.namespace }}"
+
+              echo "Discovering ArgoCD server URL from route ${ROUTE_NAME} in ${ARGOCD_NS}..."
+              ARGOCD_HOST=$(oc get route "${ROUTE_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.spec.host}')
+              ARGOCD_URL="https://${ARGOCD_HOST}"
+              echo "ArgoCD URL: ${ARGOCD_URL}"
+
+              echo "Reading admin password from secret ${SECRET_NAME}..."
+              ADMIN_PASSWORD=$(oc get secret "${SECRET_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.data.admin\.password}' | base64 -d)
+
+              echo "Authenticating with ArgoCD API..."
+              SESSION_TOKEN=$(curl -sk "${ARGOCD_URL}/api/v1/session" \
+                -H "Content-Type: application/json" \
+                -d "{\"username\":\"admin\",\"password\":\"${ADMIN_PASSWORD}\"}" \
+                | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
+              echo "Generating long-lived API token..."
+              API_TOKEN=$(curl -sk "${ARGOCD_URL}/api/v1/account/admin/token" \
+                -H "Authorization: Bearer ${SESSION_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -X POST -d '{"expiresIn": 0}' \
+                | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
+              echo "Creating credentials secret ${CREDS_SECRET} in ${TARGET_NS}..."
+              oc create secret generic "${CREDS_SECRET}" \
+                --from-literal=ARGOCD_BASE_URL="${ARGOCD_URL}" \
+                --from-literal=ARGOCD_API_TOKEN="${API_TOKEN}" \
+                -n "${TARGET_NS}" \
+                --dry-run=client -o yaml | oc apply -f -
+
+              echo "Setup complete."
+{{- end }}

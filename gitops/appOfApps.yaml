@@ -29,6 +29,8 @@ spec:
             enabled: false
           kubernetesMcp:
             enabled: true
+          argocdMcp:
+            enabled: true
           llamaStack:
             enabled: true
           milvus:
