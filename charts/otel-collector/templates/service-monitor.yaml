@@ -1,0 +1,21 @@
+{{- if .Values.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.collector.name }}-monitor
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.collector.name }}
+spec:
+  endpoints:
+    - port: monitoring
+      interval: 30s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/managed-by: opentelemetry-operator
+      app.kubernetes.io/instance: {{ .Release.Namespace }}.{{ .Values.collector.name }}
+{{- end }}

@@ -1,0 +1,75 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.grafana.name }}-proxy-{{ .Release.Namespace }}
+rules:
+  - verbs:
+      - create
+    apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+  - verbs:
+      - create
+    apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.grafana.name }}-proxy
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.grafana.name }}-proxy-{{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.grafana.name }}-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.grafana.name }}-application-monitoring
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.grafana.name }}-sa
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.grafana.name }}-uwm-access-{{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.grafana.name }}-sa
+    namespace: {{ .Release.Namespace }}
+{{- if .Values.vllm.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Values.grafana.name }}-metrics-view-{{ .Release.Namespace }}
+  namespace: {{ .Values.vllm.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.grafana.name }}-sa
+    namespace: {{ .Release.Namespace }}
+{{- end }}

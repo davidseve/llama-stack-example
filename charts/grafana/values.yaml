@@ -1,0 +1,20 @@
+ignoreHelmHooks: true
+
+grafana:
+  name: llama-stack-grafana
+  dashboardFolder: "LlamaStack Dashboards"
+
+llamastack:
+  servicePattern: "llama-stack-.*"   # Regex matching OTEL_SERVICE_NAME
+
+rhoaiPrometheus:
+  enabled: false                      # Enable only if RHOAI monitoring stack exists (redhat-ods-monitoring)
+
+vllm:
+  enabled: true
+  namespace: ""                       # Namespace where vLLM InferenceServices run (for RBAC)
+
+tempo:
+  enabled: false
+  url: "http://tempo-tempo-local:3200"  # Matches charts/tempo default: http://{name}-{name}-local:3200
+  namespacePattern: ""                  # Regex for trace namespace filter

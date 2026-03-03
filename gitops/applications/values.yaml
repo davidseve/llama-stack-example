@@ -26,3 +26,19 @@ applications:
 
   dspa:
     enabled: true
+
+  operators:
+    enabled: true
+    grafana: true
+    tempo: true
+    opentelemetry: true
+    uwm: true
+
+  otelCollector:
+    enabled: true
+
+  tempo:
+    enabled: true
+
+  grafana:
+    enabled: true

@@ -141,6 +141,41 @@ spec:
               key: KUBEFLOW_PIPELINES_TOKEN
               name: {{ .Values.global.name }}-secret
         {{- end }}
+        # ==================== OTEL TELEMETRY ====================
+        {{- if .Values.providers.telemetry.enabled }}
+        - name: OTEL_SERVICE_NAME
+          value: {{ .Values.providers.telemetry.serviceName | default (printf "%s-%s" .Values.global.name .Values.global.namespace) | quote }}
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ .Values.providers.telemetry.otlpEndpoint | quote }}
+        - name: OTEL_EXPORTER_OTLP_PROTOCOL
+          value: http/protobuf
+        {{- if .Values.providers.telemetry.otlpTracesEndpoint }}
+        - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+          value: {{ .Values.providers.telemetry.otlpTracesEndpoint | quote }}
+        {{- end }}
+        {{- if .Values.providers.telemetry.otlpMetricsEndpoint }}
+        - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+          value: {{ .Values.providers.telemetry.otlpMetricsEndpoint | quote }}
+        {{- end }}
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name={{ .Values.providers.telemetry.serviceName | default (printf "%s-%s" .Values.global.name .Values.global.namespace) }},service.version=1.0.0"
+        - name: TELEMETRY_SINKS
+          value: {{ .Values.providers.telemetry.sinks | quote }}
+        - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+          value: sqlite3
+        - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+          value: "true"
+        - name: OTEL_BSP_MAX_QUEUE_SIZE
+          value: "512"
+        - name: OTEL_BSP_SCHEDULE_DELAY
+          value: "5000"
+        - name: OTEL_BSP_MAX_EXPORT_BATCH_SIZE
+          value: "100"
+        - name: OTEL_BSP_EXPORT_TIMEOUT
+          value: "30000"
+        - name: OTEL_METRIC_EXPORT_INTERVAL
+          value: "60000"
+        {{- end }}
       name: {{ .Values.server.containerSpec.name }}
       port: {{ .Values.server.containerSpec.port }}
       resources:

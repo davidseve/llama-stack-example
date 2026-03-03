@@ -1,0 +1,98 @@
+{{- if .Values.tempo.enabled }}
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ .Release.Name }}-traces-dashboard
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  labels:
+    dashboards: grafana
+spec:
+  folder: {{ .Values.grafana.dashboardFolder }}
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  json: |
+    {
+      "title": "LlamaStack Traces Dashboard",
+      "uid": "llamastack-traces-{{ .Release.Namespace }}",
+      "description": "Distributed traces from LlamaStack services via Tempo",
+      "tags": ["llamastack", "traces", "tempo", "otel"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "editable": true,
+      "time": { "from": "now-1h", "to": "now" },
+      "refresh": "30s",
+      "templating": {
+        "list": [
+          {
+            "current": { "selected": true, "text": "Tempo", "value": "Tempo" },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Tempo datasource",
+            "multi": false,
+            "name": "DS_TEMPO",
+            "options": [],
+            "query": "tempo",
+            "refresh": 1,
+            "type": "datasource"
+          },
+          {
+            "current": { "selected": true, "text": "{{ .Values.tempo.namespacePattern }}", "value": "{{ .Values.tempo.namespacePattern }}" },
+            "hide": 2,
+            "label": "Namespace Pattern",
+            "name": "ns_pattern",
+            "query": "{{ .Values.tempo.namespacePattern }}",
+            "type": "constant"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "table",
+          "title": "Recent LlamaStack Traces",
+          "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+          "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "queryType": "traceqlSearch",
+              "filters": [
+                {
+                  "id": "service-name",
+                  "tag": "service.name",
+                  "operator": "=~",
+                  "value": ["{{ .Values.llamastack.servicePattern }}"],
+                  "scope": "resource"
+                },
+                {
+                  "id": "min-duration",
+                  "tag": "duration",
+                  "operator": ">",
+                  "value": ["100ms"]
+                }
+              ],
+              "limit": 50,
+              "tableType": "traces"
+            }
+          ],
+          "options": {
+            "showHeader": true,
+            "footer": { "show": false },
+            "cellHeight": "sm"
+          },
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto", "filterable": true } },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Trace Service" }, "properties": [ { "id": "custom.width", "value": 250 } ] },
+              { "matcher": { "id": "byName", "options": "Duration" }, "properties": [ { "id": "unit", "value": "ns" }, { "id": "custom.width", "value": 150 } ] },
+              { "matcher": { "id": "byName", "options": "Start time" }, "properties": [ { "id": "unit", "value": "dateTimeFromNow" }, { "id": "custom.width", "value": 200 } ] }
+            ]
+          }
+        }
+      ]
+    }
+{{- end }}

@@ -1,0 +1,36 @@
+{{- if .Values.applications.operators.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: operators
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: "-30"
+spec:
+  destination:
+    namespace: openshift-operators
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    path: charts/operators
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: HEAD
+    helm:
+      values: |
+        grafana:
+          enabled: {{ .Values.applications.operators.grafana | default true }}
+        tempo:
+          enabled: {{ .Values.applications.operators.tempo | default true }}
+        opentelemetry:
+          enabled: {{ .Values.applications.operators.opentelemetry | default true }}
+        uwm:
+          enabled: {{ .Values.applications.operators.uwm | default true }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+{{- end }}

@@ -1,0 +1,50 @@
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ .Values.collector.name }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch:
+        send_batch_size: 1024
+        timeout: 5s
+      memory_limiter:
+        check_interval: 5s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+    exporters:
+      otlp/tempo:
+        endpoint: {{ .Values.collector.tempoEndpoint | quote }}
+        tls:
+          insecure: true
+      prometheus:
+        endpoint: "0.0.0.0:{{ .Values.collector.metricsPort }}"
+        resource_to_telemetry_conversion:
+          enabled: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus]
+  resources:
+    limits:
+      cpu: {{ .Values.collector.resources.limits.cpu }}
+      memory: {{ .Values.collector.resources.limits.memory }}
+    requests:
+      cpu: {{ .Values.collector.resources.requests.cpu }}
+      memory: {{ .Values.collector.resources.requests.memory }}

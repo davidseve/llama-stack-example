@@ -178,11 +178,17 @@ providers:
     baseImage: ""
     sslVerify: false  # Use false with podToPodTLS: false in DSPA
 
-  # Telemetry configuration
+  # Telemetry configuration (OpenTelemetry)
+  # Set enabled: true and otlpEndpoint to start sending metrics+traces to a single collector.
+  # If metrics and traces go to DIFFERENT collectors, set the override endpoints below.
+  # Leave overrides empty to send everything to otlpEndpoint.
   telemetry:
-    serviceName: "​"
-    sinks: "console"
-    otlpEndpoint: ""
+    enabled: false
+    serviceName: ""                # Defaults to "{global.name}-{global.namespace}" if empty
+    sinks: "console"               # "console" (logs only) or "otel" (export via OTLP)
+    otlpEndpoint: ""               # Required when sinks=otel. Single OTLP collector for all signals.
+    otlpMetricsEndpoint: ""        # Optional: separate collector for metrics only (overrides otlpEndpoint for metrics)
+    otlpTracesEndpoint: ""         # Optional: separate collector for traces only (overrides otlpEndpoint for traces)
 
   # Tool runtime - Brave Search
   braveSearch:

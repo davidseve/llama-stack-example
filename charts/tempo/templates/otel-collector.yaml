@@ -1,0 +1,46 @@
+{{- if .Values.otelCollector.enabled }}
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: {{ .Values.otelCollector.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tempo.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch:
+        send_batch_size: 1024
+        timeout: 5s
+      memory_limiter:
+        check_interval: 5s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+    exporters:
+      otlp:
+        endpoint: "{{ include "tempo.serviceName" . }}:4317"
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp]
+  resources:
+    limits:
+      cpu: {{ .Values.otelCollector.resources.limits.cpu }}
+      memory: {{ .Values.otelCollector.resources.limits.memory }}
+    requests:
+      cpu: {{ .Values.otelCollector.resources.requests.cpu }}
+      memory: {{ .Values.otelCollector.resources.requests.memory }}
+{{- end }}

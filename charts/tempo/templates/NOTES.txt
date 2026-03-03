@@ -1,0 +1,43 @@
+Tempo has been deployed in namespace {{ .Release.Namespace }}.
+
+=== Service Endpoints ===
+
+Tempo API (for Grafana datasource):
+  http://{{ include "tempo.serviceName" . }}:3200
+
+Tempo OTLP ingestion (for LlamaStack traces):
+  gRPC: {{ include "tempo.serviceName" . }}:4317
+  HTTP: http://{{ include "tempo.serviceName" . }}:4318
+
+{{- if .Values.otelCollector.enabled }}
+
+OTEL Collector (alternative trace ingestion):
+  gRPC: {{ .Values.otelCollector.name }}-collector:4317
+  HTTP: http://{{ .Values.otelCollector.name }}-collector:4318
+{{- end }}
+
+{{- if .Values.tempo.jaegerui.route }}
+
+Jaeger UI:
+  oc get route {{ .Values.tempo.name }}-jaegerui -n {{ .Release.Namespace }}
+{{- end }}
+
+=== Configure LlamaStack ===
+
+To send traces from LlamaStack to this Tempo instance:
+
+  helm upgrade llama-stack charts/llama-stack \
+    --set providers.telemetry.enabled=true \
+    --set providers.telemetry.sinks=otel \
+    --set providers.telemetry.otlpEndpoint="http://{{ include "tempo.serviceName" . }}:4318"
+
+Or if metrics go to a different collector (e.g., RHOAI):
+
+  --set providers.telemetry.otlpEndpoint="http://rhoai-collector:4318" \
+  --set providers.telemetry.otlpTracesEndpoint="http://{{ include "tempo.serviceName" . }}:4318"
+
+=== Configure Grafana ===
+
+  helm upgrade grafana charts/grafana \
+    --set tempo.enabled=true \
+    --set tempo.url="http://{{ include "tempo.serviceName" . }}:3200"
