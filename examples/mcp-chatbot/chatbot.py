@@ -80,14 +80,17 @@ Provide a clear diagnosis with specific details from the tool outputs."""
                     continue
 
                 try:
-                    tools = self.client.tools.list(toolgroup_id=tg.identifier)
-                    tool_names = [t.identifier.split("::")[-1] for t in tools]
+                    tools = list(self.client.tools.list(toolgroup_id=tg.identifier))
+                    tool_names = [getattr(t, 'name', str(t)) for t in tools]
                     self.tools.append({
                         "type": "mcp",
                         "server_label": label,
                         "server_url": mcp_url
                     })
-                    print(f"  {tg.identifier}: {len(tool_names)} tools ({', '.join(tool_names[:5])}{'...' if len(tool_names) > 5 else ''})")
+                    preview = ', '.join(tool_names[:5])
+                    if len(tool_names) > 5:
+                        preview += '...'
+                    print(f"  {tg.identifier}: {len(tool_names)} tools ({preview})")
                 except Exception as e:
                     print(f"  {tg.identifier}: unreachable at {mcp_url}, skipping ({e})")
 
