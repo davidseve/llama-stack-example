@@ -18,6 +18,8 @@ spec:
       valueFiles:
       - ../values-common.yaml
       values: |  
+        global:
+          targetRevision: observability
         applications:
           rhoai:
             enabled: true

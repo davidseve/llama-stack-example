@@ -15,7 +15,7 @@ spec:
   source:
     path: charts/operators
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: {{ .Values.global.targetRevision | default "HEAD" }}
     helm:
       values: |
         grafana:
