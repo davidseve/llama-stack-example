@@ -40,12 +40,26 @@ spec:
             "type": "datasource"
           },
           {
-            "current": { "selected": true, "text": "{{ .Values.tempo.namespacePattern }}", "value": "{{ .Values.tempo.namespacePattern }}" },
+            "current": {
+              "selected": true,
+              "text": "{{ .Values.llamastack.servicePattern }}",
+              "value": "{{ .Values.llamastack.servicePattern }}"
+            },
             "hide": 2,
-            "label": "Namespace Pattern",
-            "name": "ns_pattern",
-            "query": "{{ .Values.tempo.namespacePattern }}",
-            "type": "constant"
+            "includeAll": false,
+            "label": "Service Pattern",
+            "multi": false,
+            "name": "service_pattern",
+            "options": [
+              {
+                "selected": true,
+                "text": "{{ .Values.llamastack.servicePattern }}",
+                "value": "{{ .Values.llamastack.servicePattern }}"
+              }
+            ],
+            "query": "{{ .Values.llamastack.servicePattern }}",
+            "refresh": 0,
+            "type": "custom"
           }
         ]
       },
@@ -53,37 +67,99 @@ spec:
         {
           "id": 1,
           "type": "table",
-          "title": "Recent LlamaStack Traces",
+          "title": "LlamaStack Distributed Traces",
           "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
           "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
           "targets": [
             {
+              "limit": 200,
+              "query": "{resource.service.name=~\"$service_pattern\"}",
+              "queryType": "traceql",
               "refId": "A",
-              "queryType": "traceqlSearch",
-              "filters": [
-                {
-                  "id": "service-name",
-                  "tag": "service.name",
-                  "operator": "=~",
-                  "value": ["{{ .Values.llamastack.servicePattern }}"],
-                  "scope": "resource"
-                }
-              ],
-              "limit": 50,
-              "tableType": "traces"
+              "tableType": "traces",
+              "filters": []
             }
           ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "cellOptions": { "type": "auto" },
+                "inspect": false,
+                "filterable": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [ { "color": "green", "value": null } ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "traceID" },
+                "properties": [
+                  { "id": "custom.width", "value": 300 },
+                  { "id": "displayName", "value": "Trace ID" },
+                  { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "rootServiceName" },
+                "properties": [
+                  { "id": "custom.width", "value": 200 },
+                  { "id": "displayName", "value": "Service" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "rootTraceName" },
+                "properties": [
+                  { "id": "custom.width", "value": 280 },
+                  { "id": "displayName", "value": "Operation" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "startTimeUnixNano" },
+                "properties": [
+                  { "id": "custom.width", "value": 180 },
+                  { "id": "displayName", "value": "Timestamp" },
+                  { "id": "unit", "value": "dateTimeFromNow" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "durationMs" },
+                "properties": [
+                  { "id": "custom.width", "value": 120 },
+                  { "id": "displayName", "value": "Duration (ms)" },
+                  { "id": "unit", "value": "ms" },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "yellow", "value": 500 },
+                        { "color": "orange", "value": 2000 },
+                        { "color": "red", "value": 5000 }
+                      ]
+                    }
+                  },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+                ]
+              }
+            ]
+          },
           "options": {
             "showHeader": true,
-            "footer": { "show": false },
-            "cellHeight": "sm"
-          },
-          "fieldConfig": {
-            "defaults": { "custom": { "align": "auto", "filterable": true } },
-            "overrides": [
-              { "matcher": { "id": "byName", "options": "Trace Service" }, "properties": [ { "id": "custom.width", "value": 250 } ] },
-              { "matcher": { "id": "byName", "options": "Duration" }, "properties": [ { "id": "unit", "value": "ns" }, { "id": "custom.width", "value": 150 } ] },
-              { "matcher": { "id": "byName", "options": "Start time" }, "properties": [ { "id": "unit", "value": "dateTimeFromNow" }, { "id": "custom.width", "value": 200 } ] }
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": ["count"],
+              "countRows": false,
+              "fields": ""
+            },
+            "sortBy": [
+              { "displayName": "Timestamp", "desc": true }
             ]
           }
         }
