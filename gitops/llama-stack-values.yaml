@@ -46,6 +46,13 @@ providers:
     baseImage: "quay.io/modh/odh-llama-stack-ragas-runner-image:v0.1.1"
     sslVerify: false  # Use false with podToPodTLS: false in DSPA TODO verify if it works or not
 
+  # Telemetry (OpenTelemetry) -- sends metrics+traces to OTEL Collector
+  telemetry:
+    enabled: true
+    serviceName: "llama-stack-example"
+    sinks: "otel"
+    otlpEndpoint: "http://llama-stack-collector-collector:4318"
+
 # MCP Server endpoints
 mcpServers:
   openshift:

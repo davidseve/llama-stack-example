@@ -1,0 +1,40 @@
+{{- if .Values.tempo.enabled }}
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: tempo-grafanadatasource
+spec:
+  datasource:
+    access: proxy
+    editable: true
+    isDefault: false
+    jsonData:
+      httpMethod: GET
+      tracesQuery:
+        timeShiftEnabled: true
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+      tracesToLogsV2:
+        datasourceUid: 'prometheus'
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: false
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: 'prometheus'
+      serviceMap:
+        datasourceUid: 'prometheus'
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      lokiSearch:
+        datasourceUid: ''
+    name: Tempo
+    type: tempo
+    url: {{ .Values.tempo.url | quote }}
+  instanceSelector:
+    matchLabels:
+      dashboards: "grafana"
+{{- end }}

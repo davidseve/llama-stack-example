@@ -15,7 +15,7 @@ spec:
   source: 
     path: charts/llama-stack
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: {{ .Values.global.targetRevision | default "HEAD" }}
     helm:
       valueFiles:
       - ../../gitops/values-common.yaml
@@ -24,10 +24,11 @@ spec:
         providers:
           kubeflow:
             enabled: {{ .Values.providers.kubeflow.enabled | default false }}
-            # IMPORTANT: Must be external route - pipeline pods need to reach Llama Stack
             {{- if .Values.providers.kubeflow.llamaStackUrl }}
             llamaStackUrl: {{ .Values.providers.kubeflow.llamaStackUrl | quote }}
             {{- end }}
+          telemetry:
+            enabled: {{ .Values.providers.telemetry.enabled | default false }}
         secret:
           data:
             LLAMA_4_SCOUT_API_TOKEN: {{ .Values.secret.data.LLAMA_4_SCOUT_API_TOKEN | default "" | quote }}

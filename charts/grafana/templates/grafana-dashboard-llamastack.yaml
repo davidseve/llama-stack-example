@@ -1,0 +1,236 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ .Release.Name }}-llamastack-dashboard
+  namespace: {{ .Release.Namespace }}
+spec:
+  folder: {{ .Values.grafana.dashboardFolder }}
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  json: |
+    {
+      "title": "LlamaStack Metrics Dashboard",
+      "uid": "llamastack-metrics-{{ .Release.Namespace }}",
+      "tags": ["llamastack", "llm", "inference", "spanmetrics"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "refresh": "30s",
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": true,
+              "text": "UWM Prometheus",
+              "value": "UWM Prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "datasource",
+            "multi": false,
+            "name": "DS_PROMETHEUS",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": "{{ .Values.llamastack.servicePattern }}",
+              "value": "{{ .Values.llamastack.servicePattern }}"
+            },
+            "hide": 2,
+            "label": "Service Pattern",
+            "multi": false,
+            "name": "service_pattern",
+            "query": "{{ .Values.llamastack.servicePattern }}",
+            "type": "constant"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Total Requests (Last Hour)",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(increase(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[1h]))",
+              "legendFormat": "Requests",
+              "instant": true
+            }
+          ],
+          "options": { "graphMode": "area", "colorMode": "value" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 100 },
+                  { "color": "orange", "value": 500 },
+                  { "color": "red", "value": 1000 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Error Rate (Last Hour)",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(increase(traces_span_metrics_calls_total{service_name=~\"$service_pattern\", status_code=\"STATUS_CODE_ERROR\"}[1h])) / sum(increase(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[1h])) * 100",
+              "legendFormat": "Error %",
+              "instant": true
+            }
+          ],
+          "options": { "graphMode": "area", "colorMode": "value" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent", "decimals": 1, "noValue": "0%",
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 } ] }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Avg Latency (Last 5m)",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traces_span_metrics_duration_milliseconds_sum{service_name=~\"$service_pattern\"}[5m])) / sum(rate(traces_span_metrics_duration_milliseconds_count{service_name=~\"$service_pattern\"}[5m]))",
+              "legendFormat": "Avg Latency",
+              "instant": true
+            }
+          ],
+          "options": { "graphMode": "area", "colorMode": "value" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms", "decimals": 0,
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 2000 }, { "color": "orange", "value": 5000 }, { "color": "red", "value": 10000 } ] }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Request Rate (req/sec)",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[5m]))",
+              "legendFormat": "Req/sec",
+              "instant": true
+            }
+          ],
+          "options": { "graphMode": "area", "colorMode": "value" },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps", "decimals": 2,
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "red", "value": 50 } ] }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Request Rate Over Time",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "targets": [
+            { "refId": "A", "expr": "sum(rate(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[1m])) by (span_name)", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 20, "stacking": { "mode": "none" } } } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": ["last", "mean", "max"] } }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Latency Over Time (p50 / p95 / p99)",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "targets": [
+            { "refId": "A", "expr": "histogram_quantile(0.50, sum(rate(traces_span_metrics_duration_milliseconds_bucket{service_name=~\"$service_pattern\"}[5m])) by (le))", "legendFormat": "p50" },
+            { "refId": "B", "expr": "histogram_quantile(0.95, sum(rate(traces_span_metrics_duration_milliseconds_bucket{service_name=~\"$service_pattern\"}[5m])) by (le))", "legendFormat": "p95" },
+            { "refId": "C", "expr": "histogram_quantile(0.99, sum(rate(traces_span_metrics_duration_milliseconds_bucket{service_name=~\"$service_pattern\"}[5m])) by (le))", "legendFormat": "p99" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10, "stacking": { "mode": "none" } } } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true, "calcs": ["last", "mean", "max"] } }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Avg Latency by Endpoint",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "targets": [
+            { "refId": "A", "expr": "sum(rate(traces_span_metrics_duration_milliseconds_sum{service_name=~\"$service_pattern\"}[5m])) by (span_name) / sum(rate(traces_span_metrics_duration_milliseconds_count{service_name=~\"$service_pattern\"}[5m])) by (span_name)", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "none" } } } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } }
+        },
+        {
+          "id": 8,
+          "type": "table",
+          "title": "Endpoint Performance Summary",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "targets": [
+            { "refId": "A", "expr": "sum(rate(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[5m])) by (span_name)", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}", "format": "table", "instant": true },
+            { "refId": "B", "expr": "sum(rate(traces_span_metrics_duration_milliseconds_sum{service_name=~\"$service_pattern\"}[5m])) by (span_name) / sum(rate(traces_span_metrics_duration_milliseconds_count{service_name=~\"$service_pattern\"}[5m])) by (span_name)", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}", "format": "table", "instant": true },
+            { "refId": "C", "expr": "sum(increase(traces_span_metrics_calls_total{service_name=~\"$service_pattern\"}[1h])) by (span_name)", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}", "format": "table", "instant": true },
+            { "refId": "D", "expr": "histogram_quantile(0.95, sum(rate(traces_span_metrics_duration_milliseconds_bucket{service_name=~\"$service_pattern\"}[5m])) by (le, span_name))", "legendFormat": "{{ "{{" }}span_name{{ "}}" }}", "format": "table", "instant": true }
+          ],
+          "transformations": [
+            { "id": "merge", "options": {} },
+            { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "span_name": "Endpoint", "Value #A": "Req/sec", "Value #B": "Avg Latency (ms)", "Value #C": "Total Requests (1h)", "Value #D": "p95 Latency (ms)" } } }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "left", "filterable": true } },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Req/sec" }, "properties": [ { "id": "unit", "value": "reqps" }, { "id": "decimals", "value": 3 } ] },
+              { "matcher": { "id": "byName", "options": "Avg Latency (ms)" }, "properties": [ { "id": "unit", "value": "ms" }, { "id": "decimals", "value": 0 } ] },
+              { "matcher": { "id": "byName", "options": "p95 Latency (ms)" }, "properties": [ { "id": "unit", "value": "ms" }, { "id": "decimals", "value": 0 } ] }
+            ]
+          }
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "OTEL Collector - Spans Received vs Exported",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "gridPos": { "h": 6, "w": 24, "x": 0, "y": 20 },
+          "targets": [
+            { "refId": "A", "expr": "sum(rate(otelcol_receiver_accepted_spans_total[5m]))", "legendFormat": "Spans Received/sec" },
+            { "refId": "B", "expr": "sum(rate(otelcol_exporter_sent_spans_total[5m]))", "legendFormat": "Spans Exported/sec" },
+            { "refId": "C", "expr": "sum(rate(otelcol_exporter_send_failed_spans_total[5m]))", "legendFormat": "Spans Failed/sec" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15, "stacking": { "mode": "none" } } } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } }
+        }
+      ]
+    }

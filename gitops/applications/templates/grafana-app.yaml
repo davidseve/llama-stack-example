@@ -1,0 +1,46 @@
+{{- if .Values.applications.grafana.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-wave: "20"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  destination:
+    namespace: {{ .Values.global.namespace }}
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    path: charts/grafana
+    repoURL: 'https://github.com/davidseve/llama-stack-example.git'
+    targetRevision: {{ .Values.global.targetRevision | default "HEAD" }}
+    helm:
+      valueFiles:
+      - ../../gitops/values-common.yaml
+      values: |
+        tempo:
+          enabled: true
+          url: "http://tempo-tempo:3200"
+          namespacePattern: "{{ .Values.global.namespace }}"
+        llamastack:
+          servicePattern: "{{ .Values.global.name }}.*"
+        vllm:
+          enabled: false
+        rhoaiPrometheus:
+          enabled: false
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+{{- end }}

@@ -1,0 +1,19 @@
+Tempo has been deployed in namespace {{ .Release.Namespace }}.
+
+=== Service Endpoints ===
+
+Tempo API (for Grafana datasource):
+  http://{{ include "tempo.serviceName" . }}:3200
+
+Tempo OTLP ingestion:
+  gRPC: {{ include "tempo.serviceName" . }}:4317
+  HTTP: http://{{ include "tempo.serviceName" . }}:4318
+
+=== Configure LlamaStack ===
+
+Traces are sent from LlamaStack via the OTEL Collector to Tempo.
+The OTEL Collector is deployed separately (charts/otel-collector).
+
+=== View Traces ===
+
+Use Grafana Explore with the Tempo datasource to search and inspect traces.

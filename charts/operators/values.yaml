@@ -1,0 +1,11 @@
+grafana:
+  enabled: true
+
+tempo:
+  enabled: true
+
+opentelemetry:
+  enabled: true
+
+uwm:
+  enabled: true

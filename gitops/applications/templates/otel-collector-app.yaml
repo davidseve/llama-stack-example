@@ -1,21 +1,20 @@
-{{- if .Values.applications.rhoai.enabled }}
+{{- if .Values.applications.otelCollector.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: rhoai
+  name: otel-collector
   namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
-    argocd.argoproj.io/sync-wave: "-10"
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+    argocd.argoproj.io/sync-wave: "12"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   destination:
     namespace: {{ .Values.global.namespace }}
     server: 'https://kubernetes.default.svc'
   project: default
-  source: 
-    path: charts/rhoai
+  source:
+    path: charts/otel-collector
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
     targetRevision: {{ .Values.global.targetRevision | default "HEAD" }}
     helm:
@@ -25,7 +24,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 10m
     syncOptions:
-      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
 {{- end }}
-

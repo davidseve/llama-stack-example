@@ -1,0 +1,5 @@
+---
+apiVersion: v2
+description: A Helm chart for deploying OLM operator subscriptions required by LlamaStack observability
+name: llama-stack-operators
+version: 0.1.0

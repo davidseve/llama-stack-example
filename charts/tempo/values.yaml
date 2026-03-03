@@ -1,0 +1,14 @@
+# Tempo instance configuration
+tempo:
+  name: tempo
+  storage:
+    backend: memory          # "memory" for dev/test, "pv" for persistent volume
+    size: 2Gi                # Storage size (memory buffer or PV size)
+  retention: 48h             # How long to keep traces
+  jaegerui:
+    enabled: false           # Grafana Explore with Tempo datasource provides the same functionality
+    route: false
+  ingestion:
+    otlp:
+      grpc: true             # Accept OTLP gRPC on port 4317
+      http: true             # Accept OTLP HTTP on port 4318

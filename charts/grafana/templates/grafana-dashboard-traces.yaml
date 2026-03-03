@@ -1,0 +1,168 @@
+{{- if .Values.tempo.enabled }}
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ .Release.Name }}-traces-dashboard
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+  labels:
+    dashboards: grafana
+spec:
+  folder: {{ .Values.grafana.dashboardFolder }}
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  json: |
+    {
+      "title": "LlamaStack Traces Dashboard",
+      "uid": "llamastack-traces-{{ .Release.Namespace }}",
+      "description": "Distributed traces from LlamaStack services via Tempo",
+      "tags": ["llamastack", "traces", "tempo", "otel"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "editable": true,
+      "time": { "from": "now-1h", "to": "now" },
+      "refresh": "30s",
+      "templating": {
+        "list": [
+          {
+            "current": { "selected": true, "text": "Tempo", "value": "Tempo" },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Tempo datasource",
+            "multi": false,
+            "name": "DS_TEMPO",
+            "options": [],
+            "query": "tempo",
+            "refresh": 1,
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": "{{ .Values.llamastack.servicePattern }}",
+              "value": "{{ .Values.llamastack.servicePattern }}"
+            },
+            "hide": 2,
+            "includeAll": false,
+            "label": "Service Pattern",
+            "multi": false,
+            "name": "service_pattern",
+            "options": [
+              {
+                "selected": true,
+                "text": "{{ .Values.llamastack.servicePattern }}",
+                "value": "{{ .Values.llamastack.servicePattern }}"
+              }
+            ],
+            "query": "{{ .Values.llamastack.servicePattern }}",
+            "refresh": 0,
+            "type": "custom"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "table",
+          "title": "LlamaStack Distributed Traces",
+          "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+          "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "limit": 200,
+              "query": "{resource.service.name=~\"$service_pattern\"}",
+              "queryType": "traceql",
+              "refId": "A",
+              "tableType": "traces",
+              "filters": []
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "cellOptions": { "type": "auto" },
+                "inspect": false,
+                "filterable": true
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [ { "color": "green", "value": null } ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "traceID" },
+                "properties": [
+                  { "id": "custom.width", "value": 300 },
+                  { "id": "displayName", "value": "Trace ID" },
+                  { "id": "custom.cellOptions", "value": { "type": "color-text" } },
+                  { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "rootServiceName" },
+                "properties": [
+                  { "id": "custom.width", "value": 200 },
+                  { "id": "displayName", "value": "Service" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "rootTraceName" },
+                "properties": [
+                  { "id": "custom.width", "value": 280 },
+                  { "id": "displayName", "value": "Operation" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "startTimeUnixNano" },
+                "properties": [
+                  { "id": "custom.width", "value": 180 },
+                  { "id": "displayName", "value": "Timestamp" },
+                  { "id": "unit", "value": "dateTimeFromNow" }
+                ]
+              },
+              {
+                "matcher": { "id": "byName", "options": "durationMs" },
+                "properties": [
+                  { "id": "custom.width", "value": 120 },
+                  { "id": "displayName", "value": "Duration (ms)" },
+                  { "id": "unit", "value": "ms" },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        { "color": "green", "value": null },
+                        { "color": "yellow", "value": 500 },
+                        { "color": "orange", "value": 2000 },
+                        { "color": "red", "value": 5000 }
+                      ]
+                    }
+                  },
+                  { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": true,
+              "reducer": ["count"],
+              "countRows": false,
+              "fields": ""
+            },
+            "sortBy": [
+              { "displayName": "Timestamp", "desc": true }
+            ]
+          }
+        }
+      ]
+    }
+{{- end }}

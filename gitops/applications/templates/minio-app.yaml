@@ -13,7 +13,7 @@ spec:
     namespace: data-science-project
   source:
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: HEAD
+    targetRevision: {{ .Values.global.targetRevision | default "HEAD" }}
     path: charts/minio
     helm: 
       valueFiles: 
