@@ -67,8 +67,8 @@ affinity: {}
 # ArgoCD connection - auto-discovered by the setup Job
 argocd:
   namespace: openshift-gitops
-  routeName: openshift-gitops-server
-  secretName: openshift-gitops-cluster
+  routeName: argocd-server
+  secretName: argocd-cluster
   # Set to true to disable write operations (create, update, delete, sync)
   readOnly: false
   # Name of the Secret created by the setup Job
