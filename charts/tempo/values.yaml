@@ -6,8 +6,8 @@ tempo:
     size: 2Gi                # Storage size (memory buffer or PV size)
   retention: 48h             # How long to keep traces
   jaegerui:
-    enabled: true            # Enable Jaeger UI for trace exploration
-    route: true              # Create OpenShift Route for Jaeger UI
+    enabled: false           # Grafana Explore with Tempo datasource provides the same functionality
+    route: false
   ingestion:
     otlp:
       grpc: true             # Accept OTLP gRPC on port 4317

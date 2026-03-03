@@ -65,7 +65,7 @@ This automatically deploys (in order via sync waves):
 | -30 | Operators (Grafana, Tempo, OpenTelemetry) + UWM | `charts/operators` |
 | 10 | LlamaStack with OTEL telemetry | `charts/llama-stack` |
 | 12 | OTEL Collector (with spanmetrics connector) | `charts/otel-collector` |
-| 15 | Tempo (trace storage + Jaeger UI) | `charts/tempo` |
+| 15 | Tempo (trace storage) | `charts/tempo` |
 | 20 | Grafana (datasources + dashboards) | `charts/grafana` |
 
 ### GitOps Configuration
@@ -161,13 +161,7 @@ oc exec -n llama-stack-example deploy/llama-stack-example -- \
   python3 -c "import urllib.request,json; d=json.loads(urllib.request.urlopen('http://tempo-tempo:3200/api/search?limit=10').read()); [print(f'{t[\"rootTraceName\"]:40s} {t[\"durationMs\"]:>6}ms') for t in d['traces']]"
 ```
 
-Or open the **Jaeger UI** route for visual trace exploration:
-
-```bash
-oc get route tempo-tempo-jaegerui -n llama-stack-example -o jsonpath='https://{.spec.host}'
-```
-
-In Grafana, open the **LlamaStack Traces Dashboard** to see traces with color-coded duration.
+In Grafana, open **Explore > Tempo** to search and inspect individual traces (waterfall view, node graph), or the **LlamaStack Traces Dashboard** for an overview with color-coded duration.
 
 ### Logs
 
@@ -195,7 +189,7 @@ Running `scripts/validate_all.sh` checks 8 categories:
 [1/8] Operators        - CSVs for grafana-operator, tempo-operator, opentelemetry-operator
 [2/8] UWM              - Running pods in openshift-user-workload-monitoring
 [3/8] OTEL Collector   - Pod + service in namespace
-[4/8] Tempo            - Pod + Jaeger UI route
+[4/8] Tempo            - Pod + service
 [5/8] Grafana          - Pod + route + datasources + dashboards
 [6/8] Metrics          - traces_span_metrics_calls_total per endpoint (/v1/chat/completions, /v1/responses)
 [7/8] Traces           - Tempo traces per endpoint (/v1/chat/completions, /v1/responses)

@@ -92,11 +92,11 @@ else
     check "Tempo pod" "FAIL" "Not found in $NAMESPACE. Check Tempo operator and charts/tempo."
 fi
 
-JAEGER_ROUTE=$(oc get route tempo-tempo-jaegerui -n "$NAMESPACE" -o jsonpath='{.spec.host}' 2>/dev/null || echo "")
-if [[ -n "$JAEGER_ROUTE" ]]; then
-    check "Jaeger UI route: https://$JAEGER_ROUTE" "PASS"
+TEMPO_SVC_CHECK=$(oc get svc -n "$NAMESPACE" --no-headers 2>/dev/null | grep "^tempo-tempo " || echo "")
+if [[ -n "$TEMPO_SVC_CHECK" ]]; then
+    check "Tempo service available" "PASS"
 else
-    check "Jaeger UI route" "WARN" "Route not found. Jaeger UI may not be enabled."
+    check "Tempo service" "FAIL" "tempo-tempo service not found."
 fi
 
 # --- 5. Grafana ---
