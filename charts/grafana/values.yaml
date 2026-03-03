@@ -16,5 +16,5 @@ vllm:
 
 tempo:
   enabled: false
-  url: "http://tempo-tempo-local:3200"  # Matches charts/tempo default: http://{name}-{name}-local:3200
+  url: "http://tempo-tempo:3200"  # Matches charts/tempo default: http://{name}-{name}-local:3200
   namespacePattern: ""                  # Regex for trace namespace filter

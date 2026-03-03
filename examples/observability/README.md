@@ -141,7 +141,7 @@ providers:
 1. **LlamaStack** generates metrics (token counters) and traces (inference spans) via the OTEL Python SDK
 2. All telemetry is pushed via **OTLP HTTP** to the **OTEL Collector** (`llama-stack-collector-collector:4318`)
 3. The collector **splits the signal**:
-   - **Traces** are exported via OTLP to **Tempo** (`tempo-tempo-local:4317`)
+   - **Traces** are exported via OTLP to **Tempo** (`tempo-tempo:4317`)
    - **Metrics** are exposed as `/metrics` in Prometheus format on port 8889
 4. **Prometheus** (User Workload Monitoring) scrapes the collector's `/metrics` endpoint via a `ServiceMonitor`
 5. **Grafana** queries:
@@ -171,7 +171,7 @@ After generating traffic:
 
 ```bash
 # Query Tempo directly
-oc exec -n llama-stack-example deploy/tempo-tempo-local -- \
+oc exec -n llama-stack-example deploy/tempo-tempo -- \
   curl -s "http://localhost:3200/api/search?limit=5"
 ```
 

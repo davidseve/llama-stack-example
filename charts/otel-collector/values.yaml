@@ -1,6 +1,6 @@
 collector:
   name: llama-stack-collector
-  tempoEndpoint: "tempo-tempo-local:4317"
+  tempoEndpoint: "tempo-tempo:4317"
   metricsPort: 8889
   resources:
     limits:

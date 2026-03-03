@@ -156,9 +156,9 @@ check "ServiceMonitor exists ($SM_COUNT)" "$([ "$SM_COUNT" -gt 0 ] && echo PASS 
 # --- 7. Traces ---
 echo ""
 echo -e "${BLUE}[7/8] Traces (Tempo)${NC}"
-TEMPO_SVC=$(oc get svc -n "$NAMESPACE" 2>/dev/null | grep "tempo-tempo-local" | head -1 || echo "")
+TEMPO_SVC=$(oc get svc -n "$NAMESPACE" 2>/dev/null | grep "tempo-tempo" | head -1 || echo "")
 if [[ -n "$TEMPO_SVC" ]]; then
-    TRACES_RESULT=$(oc exec -n "$NAMESPACE" deploy/tempo-tempo-local -- \
+    TRACES_RESULT=$(oc exec -n "$NAMESPACE" deploy/tempo-tempo -- \
         curl -s "http://localhost:3200/api/search?limit=5" 2>/dev/null || echo "")
     TRACE_COUNT=$(echo "$TRACES_RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('traces',[])))" 2>/dev/null || echo "0")
     if [[ "$TRACE_COUNT" -gt 0 ]]; then
@@ -167,7 +167,7 @@ if [[ -n "$TEMPO_SVC" ]]; then
         check "Traces in Tempo" "WARN" "No traces yet. Generate traffic first, then wait for OTEL batch export."
     fi
 else
-    check "Tempo service" "FAIL" "tempo-tempo-local service not found."
+    check "Tempo service" "FAIL" "tempo-tempo service not found."
 fi
 
 # --- 8. Logs ---
