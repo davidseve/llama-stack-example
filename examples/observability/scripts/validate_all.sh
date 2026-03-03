@@ -45,7 +45,7 @@ echo ""
 
 # --- 1. Operators ---
 echo -e "${BLUE}[1/8] Operators${NC}"
-for op in "grafana-operator" "tempo-product" "opentelemetry-product"; do
+for op in "grafana-operator" "tempo-operator" "opentelemetry-operator"; do
     PHASE=$(oc get csv -A 2>/dev/null | grep "$op" | head -1 | awk '{print $NF}' || echo "")
     if [[ "$PHASE" == "Succeeded" ]]; then
         check "$op CSV" "PASS"
@@ -92,7 +92,7 @@ else
     check "Tempo pod" "FAIL" "Not found in $NAMESPACE. Check Tempo operator and charts/tempo."
 fi
 
-JAEGER_ROUTE=$(oc get route tempo-jaegerui -n "$NAMESPACE" -o jsonpath='{.spec.host}' 2>/dev/null || echo "")
+JAEGER_ROUTE=$(oc get route tempo-tempo-jaegerui -n "$NAMESPACE" -o jsonpath='{.spec.host}' 2>/dev/null || echo "")
 if [[ -n "$JAEGER_ROUTE" ]]; then
     check "Jaeger UI route: https://$JAEGER_ROUTE" "PASS"
 else
@@ -153,14 +153,16 @@ SM_COUNT=$(echo "$SM_COUNT" | tr -d '[:space:]')
 SM_COUNT=${SM_COUNT:-0}
 check "ServiceMonitor exists ($SM_COUNT)" "$([ "$SM_COUNT" -gt 0 ] && echo PASS || echo FAIL)"
 
+LS_POD=$(oc get pods -n "$NAMESPACE" --no-headers 2>/dev/null | grep "llama-stack-example" | grep "Running" | head -1 | awk '{print $1}' || echo "")
+
 # --- 7. Traces ---
 echo ""
 echo -e "${BLUE}[7/8] Traces (Tempo)${NC}"
-TEMPO_SVC=$(oc get svc -n "$NAMESPACE" 2>/dev/null | grep "tempo-tempo" | head -1 || echo "")
+TEMPO_SVC=$(oc get svc -n "$NAMESPACE" 2>/dev/null | grep "^tempo-tempo " | head -1 || echo "")
 if [[ -n "$TEMPO_SVC" ]]; then
-    TRACES_RESULT=$(oc exec -n "$NAMESPACE" deploy/tempo-tempo -- \
-        curl -s "http://localhost:3200/api/search?limit=5" 2>/dev/null || echo "")
-    TRACE_COUNT=$(echo "$TRACES_RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('traces',[])))" 2>/dev/null || echo "0")
+    TRACE_COUNT=$(oc exec -n "$NAMESPACE" "$LS_POD" -- \
+        python3 -c "import urllib.request,json; d=json.loads(urllib.request.urlopen('http://tempo-tempo:3200/api/search?limit=5').read()); print(len(d.get('traces',[])))" 2>/dev/null || echo "0")
+    TRACE_COUNT=${TRACE_COUNT:-0}
     if [[ "$TRACE_COUNT" -gt 0 ]]; then
         check "Traces found in Tempo ($TRACE_COUNT)" "PASS"
     else
@@ -173,7 +175,6 @@ fi
 # --- 8. Logs ---
 echo ""
 echo -e "${BLUE}[8/8] Logs${NC}"
-LS_POD=$(oc get pods -n "$NAMESPACE" --no-headers 2>/dev/null | grep "llama-stack-example" | grep "Running" | head -1 | awk '{print $1}' || echo "")
 if [[ -n "$LS_POD" ]]; then
     LOG_LINES=$(oc logs "$LS_POD" -n "$NAMESPACE" --tail=50 2>/dev/null | wc -l || echo "0")
     if [[ "$LOG_LINES" -gt 0 ]]; then
