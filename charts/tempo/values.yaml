@@ -12,16 +12,3 @@ tempo:
     otlp:
       grpc: true             # Accept OTLP gRPC on port 4317
       http: true             # Accept OTLP HTTP on port 4318
-
-# Optional: deploy an OpenTelemetry Collector in front of Tempo
-# Useful when you need processing (batching, filtering, multi-export) before Tempo
-otelCollector:
-  enabled: false
-  name: tempo-otel-collector
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi

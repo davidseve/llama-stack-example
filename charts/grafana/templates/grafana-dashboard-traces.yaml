@@ -67,12 +67,6 @@ spec:
                   "operator": "=~",
                   "value": ["{{ .Values.llamastack.servicePattern }}"],
                   "scope": "resource"
-                },
-                {
-                  "id": "min-duration",
-                  "tag": "duration",
-                  "operator": ">",
-                  "value": ["100ms"]
                 }
               ],
               "limit": 50,

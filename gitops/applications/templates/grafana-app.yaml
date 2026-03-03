@@ -26,7 +26,7 @@ spec:
           url: "http://tempo-tempo:3200"
           namespacePattern: "{{ .Values.global.namespace }}"
         llamastack:
-          servicePattern: "{{ .Values.global.name }}-.*"
+          servicePattern: "{{ .Values.global.name }}.*"
         vllm:
           enabled: false
         rhoaiPrometheus:
