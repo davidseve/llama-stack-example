@@ -8,6 +8,12 @@ the final response in a single call.
 
 Unlike rag-mcp-chatbot, this example does NOT use RAG/file_search.
 It relies solely on MCP tools to diagnose application issues.
+
+NOTE: The ArgoCD MCP server (argoproj-labs/mcp-for-argocd) in SSE mode
+reads credentials from HTTP headers, not environment variables. This
+chatbot passes the required headers (x-argocd-base-url, x-argocd-api-token)
+via the Llama Stack Responses API tool configuration. Set ARGOCD_BASE_URL
+and ARGOCD_API_TOKEN in your environment or .env file.
 """
 
 import os
@@ -33,15 +39,14 @@ class MCPChatbot:
 
         print(f"Tools configured: {len(self.tools)}")
 
-        self.instructions = """You are a DevOps/Kubernetes specialist with access to both Kubernetes and ArgoCD MCP tools.
+        self.instructions = """You are a DevOps/Kubernetes specialist. You have ArgoCD and Kubernetes tools.
 
-When troubleshooting an application:
-1. Use ArgoCD tools to check the application sync status, health, and any sync errors
-2. Use Kubernetes tools to check pod status, logs, and events in the relevant namespace
-3. Cross-reference ArgoCD desired state with actual Kubernetes state
-
-Execute ALL necessary tools before providing your final answer. Do not just describe what tools to call - actually call them.
-Provide a clear diagnosis with specific details from the tool outputs."""
+RULES:
+- Call the tools you need, then provide a FINAL TEXT ANSWER with your diagnosis.
+- After calling tools, do NOT suggest more tool calls. Summarize what you found.
+- ArgoCD application names may differ from the service name (e.g. "app-discounts-helm" for "discounts").
+- Use list_applications first to find exact names, then get_application for details.
+- Provide specific details: sync status, health status, error messages, pod states."""
 
     def _setup_client(self):
         skip_ssl = os.getenv("SKIP_SSL_VERIFY", "False").lower() == "true"
@@ -54,9 +59,26 @@ Provide a clear diagnosis with specific details from the tool outputs."""
         )
         print(f"Connected to: {self.base_url}")
 
+    def _get_argocd_headers(self):
+        """Build headers for the ArgoCD MCP server (SSE transport requires them)."""
+        base_url = os.getenv("ARGOCD_BASE_URL", "")
+        api_token = os.getenv("ARGOCD_API_TOKEN", "")
+        if base_url and api_token:
+            return {
+                "x-argocd-base-url": base_url,
+                "x-argocd-api-token": api_token,
+            }
+        return None
+
     def _setup_mcp_tools(self):
         """Discover and register all mcp::* toolgroups dynamically."""
         print("Checking MCP toolgroups...")
+
+        argocd_headers = self._get_argocd_headers()
+        if argocd_headers:
+            print("  ArgoCD credentials: loaded from environment")
+        else:
+            print("  WARNING: ARGOCD_BASE_URL/ARGOCD_API_TOKEN not set; ArgoCD tools may fail")
 
         try:
             all_toolgroups = list(self.client.toolgroups.list())
@@ -82,11 +104,14 @@ Provide a clear diagnosis with specific details from the tool outputs."""
                 try:
                     tools = list(self.client.tools.list(toolgroup_id=tg.identifier))
                     tool_names = [getattr(t, 'name', str(t)) for t in tools]
-                    self.tools.append({
+                    tool_config = {
                         "type": "mcp",
                         "server_label": label,
-                        "server_url": mcp_url
-                    })
+                        "server_url": mcp_url,
+                    }
+                    if label == "argocd" and argocd_headers:
+                        tool_config["headers"] = argocd_headers
+                    self.tools.append(tool_config)
                     preview = ', '.join(tool_names[:5])
                     if len(tool_names) > 5:
                         preview += '...'
@@ -98,71 +123,49 @@ Provide a clear diagnosis with specific details from the tool outputs."""
             print(f"MCP setup error: {e}")
 
     def chat(self, message: str):
-        """
-        Send a message and get a response using streaming.
-
-        Streaming keeps the connection alive with SSE events, which prevents
-        the OpenShift route / HAProxy from timing out with a 504 during
-        long-running tool executions.
-        """
+        """Send a message and get a response with automatic MCP tool execution."""
         try:
             print(f"\nProcessing: '{message}'")
             print(f"Tools: {len(self.tools)}")
             print("=" * 60)
 
-            stream = self.client.responses.create(
+            resp = self.client.responses.create(
                 model=self.model_id,
                 input=message,
                 instructions=self.instructions,
                 tools=self.tools if self.tools else None,
-                max_infer_iters=10,
-                stream=True,
+                max_infer_iters=int(os.getenv("MAX_INFER_ITERS", "3")),
+                stream=False,
             )
 
-            tool_results = []
-            output_text_parts = []
-            final_response = None
+            tool_calls = []
+            for item in resp.output:
+                d = item.model_dump() if hasattr(item, 'model_dump') else {}
+                item_type = d.get('type', '')
+                if item_type == 'mcp_call':
+                    name = d.get('name', 'mcp_tool')
+                    error = d.get('error')
+                    output = d.get('output', '')
+                    status = 'error' if error else 'ok'
+                    tool_calls.append({"tool": name, "status": status, "result": output or str(error)})
 
-            for event in stream:
-                event_type = getattr(event, 'type', '')
-
-                if event_type == 'response.completed':
-                    final_response = getattr(event, 'response', None)
-                    if final_response and hasattr(final_response, 'output'):
-                        for item in final_response.output:
-                            item_type = str(getattr(item, 'type', '')).lower()
-
-                            if 'mcp' in item_type or hasattr(item, 'server_label'):
-                                tool_name = getattr(item, 'name', 'mcp_tool')
-                                print(f"   MCP: {tool_name}")
-                                if hasattr(item, 'output'):
-                                    tool_results.append({"tool": tool_name, "result": item.output})
-
-                elif event_type == 'response.output_text.delta':
-                    delta = getattr(event, 'delta', '')
-                    if delta:
-                        output_text_parts.append(delta)
-
-                elif event_type == 'response.mcp_call.in_progress':
-                    name = getattr(event, 'name', '')
-                    print(f"   MCP calling: {name}...")
-
-            if output_text_parts:
-                output_text = ''.join(output_text_parts)
-            elif final_response:
-                output_text = getattr(final_response, 'output_text', None) or str(final_response)
-            else:
-                output_text = "(no response received)"
+            ok_calls = [tc for tc in tool_calls if tc['status'] == 'ok']
+            failed_calls = [tc for tc in tool_calls if tc['status'] != 'ok']
 
             print("\n" + "=" * 60)
-            print(f"Tools executed: {len(tool_results)}")
-            for i, tr in enumerate(tool_results[:10]):
-                preview = str(tr['result'])[:80] + "..." if len(str(tr['result'])) > 80 else tr['result']
-                print(f"   {i+1}. {tr['tool']}: {preview}")
+            print(f"Tool calls: {len(tool_calls)} ({len(ok_calls)} ok, {len(failed_calls)} failed)")
+            for i, tc in enumerate(ok_calls[:10]):
+                preview = str(tc['result'])[:80]
+                if len(str(tc['result'])) > 80:
+                    preview += "..."
+                print(f"   {i+1}. {tc['tool']}: {preview}")
+            for tc in failed_calls[:5]:
+                print(f"   FAILED: {tc['tool']}: {str(tc['result'])[:100]}")
 
+            output_text = resp.output_text or "(no text response)"
             print(f"\nResponse:\n{output_text}")
 
-            return final_response
+            return resp
 
         except Exception as e:
             print(f"Error: {str(e)}")
@@ -175,8 +178,9 @@ def main():
     chatbot = MCPChatbot()
 
     query = os.getenv("TEST_QUERY",
-        "What is the status of the discounts application in the openshift-gitops namespace? "
-        "Check both ArgoCD and the Kubernetes resources to diagnose any issues.")
+        "What is the status of the discounts application? "
+        "Check ArgoCD (app name may be app-discounts-helm) and the Kubernetes pods "
+        "in the llama-stack-example namespace. Give me a diagnosis.")
 
     print(f"\nQuery: {query}")
     chatbot.chat(query)
