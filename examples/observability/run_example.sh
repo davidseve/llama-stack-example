@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXAMPLES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-REPO_ROOT="$(cd "$EXAMPLES_DIR/.." && pwd)"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -12,11 +11,14 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 usage() {
-    echo "Usage: $0 [--deploy] [--test] [--all]"
+    echo "Usage: $0 [--traffic] [--validate] [--all]"
     echo ""
-    echo "  --deploy   Deploy observability stack via GitOps (operators, OTEL collector, Tempo, Grafana)"
-    echo "  --test     Generate traffic and validate all observability components"
-    echo "  --all      Run both deploy and test"
+    echo "  --traffic    Generate traffic to LlamaStack (/v1/chat/completions + /v1/responses)"
+    echo "  --validate   Validate all observability components (operators, collector, Tempo, Grafana, metrics, traces)"
+    echo "  --all        Run both traffic generation and validation"
+    echo ""
+    echo "The observability stack (operators, OTEL collector, Tempo, Grafana) is deployed"
+    echo "via GitOps using the appOfApps pattern. See gitops/appOfApps.yaml."
     echo ""
     echo "Prerequisites:"
     echo "  - oc CLI logged in with cluster-admin"
@@ -32,15 +34,15 @@ if [[ -f "$EXAMPLES_DIR/.env" ]]; then
     source "$EXAMPLES_DIR/.env"
 fi
 
-DO_DEPLOY=false
-DO_TEST=false
+DO_TRAFFIC=false
+DO_VALIDATE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --deploy) DO_DEPLOY=true; shift ;;
-        --test)   DO_TEST=true; shift ;;
-        --all)    DO_DEPLOY=true; DO_TEST=true; shift ;;
-        *)        usage ;;
+        --traffic)   DO_TRAFFIC=true; shift ;;
+        --validate)  DO_VALIDATE=true; shift ;;
+        --all)       DO_TRAFFIC=true; DO_VALIDATE=true; shift ;;
+        *)           usage ;;
     esac
 done
 
@@ -49,18 +51,14 @@ echo -e "${BLUE}  LlamaStack Observability Example${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
-if $DO_DEPLOY; then
-    echo -e "${YELLOW}>>> Phase 1: Deploy observability stack${NC}"
-    bash "$SCRIPT_DIR/scripts/deploy_gitops.sh"
+if $DO_TRAFFIC; then
+    echo -e "${YELLOW}>>> Phase 1: Generate traffic${NC}"
+    bash "$SCRIPT_DIR/scripts/generate_traffic.sh"
     echo ""
 fi
 
-if $DO_TEST; then
-    echo -e "${YELLOW}>>> Phase 2: Generate traffic${NC}"
-    bash "$SCRIPT_DIR/scripts/generate_traffic.sh"
-    echo ""
-
-    echo -e "${YELLOW}>>> Phase 3: Validate observability${NC}"
+if $DO_VALIDATE; then
+    echo -e "${YELLOW}>>> Phase 2: Validate observability${NC}"
     bash "$SCRIPT_DIR/scripts/validate_all.sh"
     echo ""
 fi
