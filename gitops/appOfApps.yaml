@@ -13,13 +13,13 @@ spec:
   source: 
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: observability
+    targetRevision: argocd-mcp
     helm:
       valueFiles:
       - ../values-common.yaml
       values: |  
         global:
-          targetRevision: observability
+          targetRevision: argocd-mcp
         applications:
           rhoai:
             enabled: true
