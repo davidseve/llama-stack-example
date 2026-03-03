@@ -43,17 +43,30 @@ spec:
               ADMIN_PASSWORD=$(oc get secret "${SECRET_NAME}" -n "${ARGOCD_NS}" -o jsonpath='{.data.admin\.password}' | base64 -d)
 
               echo "Authenticating with ArgoCD API..."
-              SESSION_TOKEN=$(curl -sk "${ARGOCD_URL}/api/v1/session" \
+              RESPONSE=$(curl -sk "${ARGOCD_URL}/api/v1/session" \
                 -H "Content-Type: application/json" \
-                -d "{\"username\":\"admin\",\"password\":\"${ADMIN_PASSWORD}\"}" \
-                | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+                -d "{\"username\":\"admin\",\"password\":\"${ADMIN_PASSWORD}\"}")
+              SESSION_TOKEN=$(echo "${RESPONSE}" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
 
-              echo "Generating long-lived API token..."
-              API_TOKEN=$(curl -sk "${ARGOCD_URL}/api/v1/account/admin/token" \
+              echo "Attempting to generate long-lived API token..."
+              TOKEN_RESPONSE=$(curl -sk "${ARGOCD_URL}/api/v1/account/admin/token" \
                 -H "Authorization: Bearer ${SESSION_TOKEN}" \
                 -H "Content-Type: application/json" \
-                -X POST -d '{"expiresIn": 0}' \
-                | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+                -X POST -d '{"expiresIn": 0}')
+
+              API_TOKEN=$(echo "${TOKEN_RESPONSE}" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+if 'token' in data:
+    print(data['token'])
+else:
+    print('')
+" 2>/dev/null || echo "")
+
+              if [ -z "${API_TOKEN}" ]; then
+                echo "apiKey capability not available, using session token instead."
+                API_TOKEN="${SESSION_TOKEN}"
+              fi
 
               echo "Creating credentials secret ${CREDS_SECRET} in ${TARGET_NS}..."
               oc create secret generic "${CREDS_SECRET}" \
