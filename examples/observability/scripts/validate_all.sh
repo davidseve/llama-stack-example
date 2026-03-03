@@ -136,14 +136,28 @@ echo ""
 echo -e "${BLUE}[6/8] Metrics (Prometheus)${NC}"
 TOKEN=$(oc whoami -t 2>/dev/null || echo "")
 if [[ -n "$TOKEN" ]]; then
-    METRICS_RESULT=$(oc exec -n openshift-monitoring prometheus-k8s-0 -c prometheus -- \
-        curl -s 'http://localhost:9090/api/v1/query?query=tokens_total' 2>/dev/null || echo "")
-    METRIC_COUNT=$(echo "$METRICS_RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo "0")
-    if [[ "$METRIC_COUNT" -gt 0 ]]; then
-        check "tokens_total metric found ($METRIC_COUNT series)" "PASS"
+    SPANMETRICS_RESULT=$(oc exec -n openshift-user-workload-monitoring prometheus-user-workload-0 -c prometheus -- \
+        curl -s 'http://localhost:9090/api/v1/query?query=traces_span_metrics_calls_total' 2>/dev/null || echo "")
+    SPAN_COUNT=$(echo "$SPANMETRICS_RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('data',{}).get('result',[])))" 2>/dev/null || echo "0")
+    SPAN_COUNT=${SPAN_COUNT:-0}
+    if [[ "$SPAN_COUNT" -gt 0 ]]; then
+        check "traces_span_metrics_calls_total found ($SPAN_COUNT series)" "PASS"
     else
-        check "tokens_total metric" "WARN" "No data yet. Generate traffic first (run_example.sh --test), then wait 60s for metrics export."
+        check "traces_span_metrics_calls_total" "WARN" "No span metrics yet. Generate traffic first (run_example.sh --test)."
     fi
+
+    for EP in "/v1/chat/completions" "/v1/responses"; do
+        EP_QUERY="traces_span_metrics_calls_total{span_name=\"$EP\"}"
+        EP_RESULT=$(oc exec -n openshift-user-workload-monitoring prometheus-user-workload-0 -c prometheus -- \
+            curl -s "http://localhost:9090/api/v1/query?query=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$EP_QUERY'))")" 2>/dev/null || echo "")
+        EP_COUNT=$(echo "$EP_RESULT" | python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('data',{}).get('result',[]); print(sum(float(x['value'][1]) for x in r))" 2>/dev/null || echo "0")
+        EP_COUNT=${EP_COUNT:-0}
+        if python3 -c "exit(0 if float('$EP_COUNT') > 0 else 1)" 2>/dev/null; then
+            check "Endpoint $EP metrics (calls=$EP_COUNT)" "PASS"
+        else
+            check "Endpoint $EP metrics" "WARN" "No data for $EP. Generate traffic to this endpoint."
+        fi
+    done
 else
     check "Prometheus query" "WARN" "No oc token available. Cannot query Prometheus."
 fi
@@ -161,13 +175,28 @@ echo -e "${BLUE}[7/8] Traces (Tempo)${NC}"
 TEMPO_SVC=$(oc get svc -n "$NAMESPACE" 2>/dev/null | grep "^tempo-tempo " | head -1 || echo "")
 if [[ -n "$TEMPO_SVC" ]]; then
     TRACE_COUNT=$(oc exec -n "$NAMESPACE" "$LS_POD" -- \
-        python3 -c "import urllib.request,json; d=json.loads(urllib.request.urlopen('http://tempo-tempo:3200/api/search?limit=5').read()); print(len(d.get('traces',[])))" 2>/dev/null || echo "0")
+        python3 -c "import urllib.request,json; d=json.loads(urllib.request.urlopen('http://tempo-tempo:3200/api/search?limit=20').read()); print(len(d.get('traces',[])))" 2>/dev/null || echo "0")
     TRACE_COUNT=${TRACE_COUNT:-0}
     if [[ "$TRACE_COUNT" -gt 0 ]]; then
         check "Traces found in Tempo ($TRACE_COUNT)" "PASS"
     else
         check "Traces in Tempo" "WARN" "No traces yet. Generate traffic first, then wait for OTEL batch export."
     fi
+
+    for EP in "/v1/chat/completions" "/v1/responses"; do
+        EP_TRACES=$(oc exec -n "$NAMESPACE" "$LS_POD" -- \
+            python3 -c "
+import urllib.request,json
+d=json.loads(urllib.request.urlopen('http://tempo-tempo:3200/api/search?limit=50').read())
+count=sum(1 for t in d.get('traces',[]) if t.get('rootTraceName','')=='$EP')
+print(count)" 2>/dev/null || echo "0")
+        EP_TRACES=${EP_TRACES:-0}
+        if [[ "$EP_TRACES" -gt 0 ]]; then
+            check "Traces for $EP ($EP_TRACES found)" "PASS"
+        else
+            check "Traces for $EP" "WARN" "No traces for $EP. Generate traffic to this endpoint."
+        fi
+    done
 else
     check "Tempo service" "FAIL" "tempo-tempo service not found."
 fi

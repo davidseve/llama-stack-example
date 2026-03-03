@@ -53,12 +53,16 @@ PROMPTS=(
 
 SUCCESS=0
 FAIL=0
+HALF=$(( NUM_REQUESTS / 2 ))
+HALF_CHAT=$(( HALF > 0 ? HALF : 1 ))
+HALF_RESP=$(( NUM_REQUESTS - HALF_CHAT ))
 
-for i in $(seq 1 "$NUM_REQUESTS"); do
+echo -e "${BLUE}--- /v1/chat/completions ($HALF_CHAT requests) ---${NC}"
+for i in $(seq 1 "$HALF_CHAT"); do
     PROMPT_IDX=$(( (i - 1) % ${#PROMPTS[@]} ))
     PROMPT="${PROMPTS[$PROMPT_IDX]}"
 
-    echo -n "  [$i/$NUM_REQUESTS] \"${PROMPT:0:40}...\" "
+    echo -n "  [$i/$HALF_CHAT] \"${PROMPT:0:40}...\" "
 
     RESPONSE=$(curl -s -w "\n%{http_code}" "${CURL_OPTS[@]}" \
         "$LLAMA_STACK_URL/v1/chat/completions" \
@@ -85,7 +89,39 @@ for i in $(seq 1 "$NUM_REQUESTS"); do
 done
 
 echo ""
-echo -e "${BLUE}Results: ${GREEN}$SUCCESS OK${NC}, ${RED}$FAIL FAILED${NC}"
+echo -e "${BLUE}--- /v1/responses ($HALF_RESP requests) ---${NC}"
+for i in $(seq 1 "$HALF_RESP"); do
+    PROMPT_IDX=$(( (i - 1) % ${#PROMPTS[@]} ))
+    PROMPT="${PROMPTS[$PROMPT_IDX]}"
+
+    echo -n "  [$i/$HALF_RESP] \"${PROMPT:0:40}...\" "
+
+    RESPONSE=$(curl -s -w "\n%{http_code}" "${CURL_OPTS[@]}" \
+        "$LLAMA_STACK_URL/v1/responses" \
+        -H 'Content-Type: application/json' \
+        -d "{
+            \"model\": \"$MODEL_ID\",
+            \"input\": \"$PROMPT\",
+            \"stream\": false
+        }" 2>/dev/null || echo -e "\n000")
+
+    HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+    BODY=$(echo "$RESPONSE" | sed '$d')
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        TOTAL_TOKENS=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); u=d.get('usage',{}); print(u.get('total_tokens', u.get('output_tokens','?')))" 2>/dev/null || echo "?")
+        echo -e "${GREEN}OK${NC} (tokens: $TOTAL_TOKENS)"
+        SUCCESS=$((SUCCESS + 1))
+    else
+        echo -e "${RED}FAIL (HTTP $HTTP_CODE)${NC}"
+        FAIL=$((FAIL + 1))
+    fi
+
+    sleep 1
+done
+
+echo ""
+echo -e "${BLUE}Results: ${GREEN}$SUCCESS OK${NC}, ${RED}$FAIL FAILED${NC} (chat: $HALF_CHAT, responses: $HALF_RESP)"
 
 WAIT_SECS=60
 echo -e "${YELLOW}Waiting ${WAIT_SECS}s for telemetry propagation (metrics export interval)...${NC}"
