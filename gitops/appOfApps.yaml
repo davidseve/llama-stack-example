@@ -13,13 +13,13 @@ spec:
   source: 
     path: gitops/applications
     repoURL: 'https://github.com/davidseve/llama-stack-example.git'
-    targetRevision: observability
+    targetRevision: HEAD
     helm:
       valueFiles:
       - ../values-common.yaml
       values: |  
         global:
-          targetRevision: observability
+          targetRevision: HEAD
         applications:
           rhoai:
             enabled: true
@@ -28,6 +28,8 @@ spec:
           inference:
             enabled: false
           kubernetesMcp:
+            enabled: true
+          argocdMcp:
             enabled: true
           llamaStack:
             enabled: true

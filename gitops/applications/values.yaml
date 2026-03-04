@@ -12,6 +12,9 @@ applications:
   kubernetesMcp:
     enabled: true
   
+  argocdMcp:
+    enabled: true
+  
   llamaStack:
     enabled: true
 

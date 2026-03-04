@@ -1,0 +1,85 @@
+global:
+  namespace: llama-stack-example
+
+openshift:
+  route:
+    enabled: true
+    host: ""
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+
+replicaCount: 1
+
+image:
+  registry: ghcr.io
+  repository: argoproj-labs/mcp-for-argocd
+  version: v0.5.0
+  pullPolicy: IfNotPresent
+
+# MCP transport protocol: "http" (StreamableHTTP on /mcp) or "sse" (SSE on /sse)
+# llama-stack uses SSE for MCP communication, so "sse" is the default
+transport: sse
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: "argocd-mcp"
+
+podAnnotations: {}
+podLabels: {}
+
+defaultPodSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+podSecurityContext: {}
+
+defaultSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 3000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ArgoCD connection - auto-discovered by the setup Job.
+# The Job tries routeName/secretName first, then falls back to common defaults:
+#   Routes:  argocd-server, openshift-gitops-server
+#   Secrets: argocd-cluster, openshift-gitops-cluster, argocd-initial-admin-secret
+argocd:
+  namespace: openshift-gitops
+  routeName: argocd-server
+  secretName: argocd-cluster
+  # Set to true to disable write operations (create, update, delete, sync)
+  readOnly: false
+  # Name of the Secret created by the setup Job (used by clients, not the deployment)
+  credentialsSecret: argocd-mcp-credentials
+
+# Setup Job configuration
+setupJob:
+  enabled: true
+  image: registry.redhat.io/openshift4/ose-cli:latest
+  backoffLimit: 3
