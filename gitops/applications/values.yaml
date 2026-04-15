@@ -8,6 +8,9 @@ applications:
   
   inference:
     enabled: false
+
+  inferenceCpu:
+    enabled: false
   
   kubernetesMcp:
     enabled: true

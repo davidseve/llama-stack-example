@@ -7,9 +7,9 @@ config:
 providers:
   vllm:
     llama-4-scout:
-      modelId: "llama-4-scout-17b-16e-w4a16"  # Must match actual model name on vLLM server
-      providerModelId: "llama-4-scout-17b-16e-w4a16"
-      url: "https://llama-4-scout-17b-16e-w4a16-maas-apicast-production.apps.prod.rhoai.rh-aiservices-bu.com:443/v1"
+      modelId: "llama-scout-17b"  # Must match actual model name on vLLM server
+      providerModelId: "llama-scout-17b"
+      url: "https://litellm-prod.apps.maas.redhatworkshops.io/v1"
       maxTokens: "4096"
       tlsVerify: "false"
       apiTokenSecret: "LLAMA_4_SCOUT_API_TOKEN"

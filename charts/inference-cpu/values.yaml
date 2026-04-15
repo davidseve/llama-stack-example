@@ -1,0 +1,37 @@
+global:
+  name: tinyllama-cpu
+  namespace: llama-stack-example
+  labels:
+    dashboard: 'true'
+
+project:
+  autocreate: true
+
+model:
+  storageUri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
+  name: "tinyllama"
+  maxModelLen: 2048
+
+images:
+  vllmRuntime:
+    repository: "quay.io/rh-aiservices-bu/vllm-cpu-openai-ubi9"
+    tag: "0.3"
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "8"
+    memory: "8Gi"
+
+servingruntime:
+  enable: true
+  modelLoadingTimeoutMillis: 90000
+
+inferenceservice:
+  enable: true
+  route:
+    enable: true
+  maxReplicas: 1
+  minReplicas: 1

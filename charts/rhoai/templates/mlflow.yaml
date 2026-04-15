@@ -1,0 +1,26 @@
+{{- if .Values.mlflow.enabled }}
+apiVersion: mlflow.opendatahub.io/v1
+kind: MLflow
+metadata:
+  name: {{ .Values.mlflow.name }}
+  namespace: {{ .Values.mlflow.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  {{- with .Values.mlflow.image }}
+  image:
+    image: {{ .image }}
+  {{- end }}
+  serveArtifacts: {{ .Values.mlflow.serveArtifacts }}
+  backendStoreUri: {{ .Values.mlflow.backendStoreUri | quote }}
+  artifactsDestination: {{ .Values.mlflow.artifactsDestination | quote }}
+  storage:
+    accessModes:
+    {{- range .Values.mlflow.storage.accessModes }}
+      - {{ . }}
+    {{- end }}
+    resources:
+      requests:
+        storage: {{ .Values.mlflow.storage.resources.requests.storage }}
+{{- end }}

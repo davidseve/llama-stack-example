@@ -1,0 +1,39 @@
+{{- if .Values.servingruntime.enable }}
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: vllm-cpu
+  namespace: {{ .Values.global.namespace }}
+  annotations:
+    opendatahub.io/accelerator-name: ""
+    opendatahub.io/apiProtocol: REST
+    opendatahub.io/recommended-accelerators: ""
+    opendatahub.io/template-display-name: CUSTOM - vLLM Serving Runtime for CPU
+    opendatahub.io/template-name: vllm-cpu
+    openshift.io/display-name: CUSTOM - vLLM CPU
+  labels:
+    opendatahub.io/dashboard: {{ .Values.global.labels.dashboard | quote }}
+spec:
+  builtInAdapter:
+    modelLoadingTimeoutMillis: {{ .Values.servingruntime.modelLoadingTimeoutMillis }}
+  containers:
+    - args:
+        - --model
+        - /mnt/models
+        - --port
+        - "8080"
+        - --max-model-len
+        - {{ .Values.model.maxModelLen | quote }}
+        - --served-model-name
+        - {{ .Values.model.name }}
+      image: {{ .Values.images.vllmRuntime.repository }}:{{ .Values.images.vllmRuntime.tag }}
+      name: kserve-container
+      ports:
+        - containerPort: 8080
+          name: http1
+          protocol: TCP
+  multiModel: false
+  supportedModelFormats:
+    - autoSelect: true
+      name: vLLM
+{{- end }}
