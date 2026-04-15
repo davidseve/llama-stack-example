@@ -24,11 +24,17 @@ spec:
       managementState: {{ .Values.datasciencecluster.components.kueue.managementState }}
     llamastackoperator:
       managementState: {{ .Values.datasciencecluster.components.llamastackoperator.managementState }}
+    mlflowoperator:
+      managementState: {{ .Values.datasciencecluster.components.mlflowoperator.managementState }}
     modelregistry:
       managementState: {{ .Values.datasciencecluster.components.modelregistry.managementState }}
       registriesNamespace: {{ .Values.datasciencecluster.components.modelregistry.registriesNamespace }}
     ray:
       managementState: {{ .Values.datasciencecluster.components.ray.managementState }}
+    sparkoperator:
+      managementState: {{ .Values.datasciencecluster.components.sparkoperator.managementState }}
+    trainer:
+      managementState: {{ .Values.datasciencecluster.components.trainer.managementState }}
     trainingoperator:
       managementState: {{ .Values.datasciencecluster.components.trainingoperator.managementState }}
     trustyai:

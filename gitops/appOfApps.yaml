@@ -27,6 +27,8 @@ spec:
             enabled: true
           inference:
             enabled: false
+          inferenceCpu:
+            enabled: true
           kubernetesMcp:
             enabled: true
           argocdMcp:

@@ -4,10 +4,10 @@
 # Operator configuration
 operator:
   namespace: redhat-ods-operator
-  channel: fast-3.x
+  channel: beta
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: rhods-operator.3.0.0
+  startingCSV: rhods-operator.3.4.0-ea.1
 
 # DataScienceCluster configuration
 datasciencecluster:
@@ -23,17 +23,23 @@ datasciencecluster:
     feastoperator:
       managementState: Removed
     kserve:
-      managementState: Removed
+      managementState: Managed
     kueue:
       defaultClusterQueueName: default
       defaultLocalQueueName: default
       managementState: Removed
     llamastackoperator:
       managementState: Managed
+    mlflowoperator:
+      managementState: Managed
     modelregistry:
       managementState: Managed
       registriesNamespace: rhoai-model-registries
     ray:
+      managementState: Removed
+    sparkoperator:
+      managementState: Removed
+    trainer:
       managementState: Removed
     trainingoperator:
       managementState: Removed
@@ -42,6 +48,23 @@ datasciencecluster:
     workbenches:
       managementState: Managed
       workbenchNamespace: rhods-notebooks
+
+# MLflow instance configuration
+mlflow:
+  enabled: true
+  name: mlflow
+  namespace: redhat-ods-applications
+  image:
+    image: quay.io/opendatahub/mlflow:odh-stable
+  serveArtifacts: true
+  backendStoreUri: "sqlite:////mlflow/mlflow.db"
+  artifactsDestination: "file:///mlflow/artifacts"
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
 
 # Note: DataSciencePipelinesApplication is now in charts/dspa
 # It must be deployed separately after RHOAI is fully operational
