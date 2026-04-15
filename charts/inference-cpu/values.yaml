@@ -5,7 +5,7 @@ global:
     dashboard: 'true'
 
 project:
-  autocreate: true
+  autocreate: false
 
 model:
   storageUri: "oci://quay.io/rh-aiservices-bu/tinyllama:1.0"
